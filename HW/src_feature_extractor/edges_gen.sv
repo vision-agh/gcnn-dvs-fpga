@@ -153,8 +153,7 @@ module edges_gen #(
 
     assign ena = perform_reset ? 1'b1 : ((counter <= MEMORY_OPS_NUM-1 & condition_a) ? 1 : 0);
     assign enb = perform_reset ? 1'b1 : ((counter <= MEMORY_OPS_NUM-1 & condition_b) ? 1 : 0);
-    //assign wea = (counter == MEMORY_OPS_NUM-1 && !drop) ? 1 : 0;
-    assign wea = perform_reset ? 1'b1 : ((counter == MEMORY_OPS_NUM-1) ? 1 : 0);
+    assign wea = perform_reset ? 1'b1 : ((counter == MEMORY_OPS_NUM-1 && !drop) ? 1 : 0);
     assign web = perform_reset;
 
     assign x_coord_a = (MEM_SIGN_A_X[counter] > 0) ? (fifo_event.x - MEM_ADDR_A_X[counter]) : (fifo_event.x + MEM_ADDR_A_X[counter]);
@@ -202,11 +201,11 @@ module edges_gen #(
             edges_reg[MEMORY_OPS_NUM-1+counter_reg].is_connected <= (rd_b_reg & doutb[0]) & ((fifo_event.t-doutb[DATA_WIDTH-1:2]) <= RADIUS) & (fifo_event.t >= doutb[DATA_WIDTH-1:2]);
 
             // Drop duplicate events
-//            drop <= 0;
-//            if (counter_reg == 0 && (doutb[DATA_WIDTH-1:2] == fifo_event.t) && doutb[0]) begin
-//                drop <= 1;
-//                counter <= MEMORY_OPS_NUM-1;
-//            end
+            drop <= 0;
+            if (counter_reg == 0 && (doutb[DATA_WIDTH-1:2] == fifo_event.t) && doutb[0]) begin
+                drop <= 1;
+                counter <= MEMORY_OPS_NUM-1;
+            end
 
         end
     end
@@ -229,8 +228,7 @@ module edges_gen #(
         .odata ( valid_d1  )
     );
 
-    //assign valid_d2 = valid_d1 & !drop;
-    assign valid_d2 = valid_d1;
+    assign valid_d2 = valid_d1 & !drop;
     
     delay_module #(
         .N        ( 1  ),

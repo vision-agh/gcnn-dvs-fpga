@@ -24,7 +24,7 @@ This repository provides the first hardware module for acceleration of Graph Con
 |Team number|AOHW-284|
 |Board used|Zynq UltraScale+ MPSoC ZCU104 Evaluation Kit|
 |Software version|Vivado 2022.2|
-|Link to YouTube Video|[https://youtu.be/cFCE67cxsVo](https://youtu.be/cFCE67cxsVo)|
+|Link to YouTube Video|[https://youtu.be/w8-i1E3F-jE](https://youtu.be/w8-i1E3F-jE)|
 
 ## Getting Started
 
