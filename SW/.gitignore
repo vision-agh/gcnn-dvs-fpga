@@ -1,0 +1,6 @@
+dataset
+weights
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
