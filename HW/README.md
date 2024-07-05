@@ -52,7 +52,7 @@ Scale and normalize event's x, y and t values before graph generation.
 
 ### `./edges_gen.sv` module
 
-Generate edges besed on context memory (inside this module we use `fifo_generator_0` FIFO as event's buffer). For each incoming event we search it's context, i.e. last recored events for neighbouring x and y coordinates. Events (vertices) that met the neighbourhood contition are connected with edges. For this purpose we need 15 clock cycles (15 reads on one memory port and 14 reads and one write for the other) which constitues the throughput bottleneck of the system. 
+Generate edges based on context memory (inside this module we use `fifo_generator_0` FIFO as event's buffer). For each incoming event we search it's context, i.e. last recored events for neighbouring x and y coordinates. Events (vertices) that met the neighbourhood contition are connected with edges. For this purpose we need 15 clock cycles (15 reads on one memory port and 14 reads and one write for the other) which constitues the throughput bottleneck of the system. 
 
 ### `./memory.sv` module
 
@@ -84,7 +84,7 @@ Synchronous convolution for channel-by-channel processing (Linear layer + ReLU).
 
 ### `./memory_weights.sv` module
 
-Paramterizable module implementing single-port ROM memory realized for UltraRAM or BlockRAM, respectively (Based on AMD's Language Templates).
+Parametrizable module implementing single-port ROM memory realized for UltraRAM or BlockRAM, respectively (Based on AMD's Language Templates).
 
 ### `./vector_multiplication.sv` module
 
