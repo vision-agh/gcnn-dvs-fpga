@@ -1,10 +1,10 @@
 # This is the Hardware Part of the Project
 
-This directory contains the files necessary to generate bitstream for the MNIST-DVS clasification system. 
+This directory contains the files necessary to generate bitstream for the MNIST-DVS classification system. 
 
 ## System overview
 
-The graph generation and feature extraction hardware module enables pipelined processing of event data. For this demonstration the hardware module is implemented for "multiple sequences" mode (to enable classification on multiple event files). For MNIST-DVS dataset, due to it's low dynamics, the classification is calculated based on the 200 ms samples of data. The hardware module was however evaluated also for N-Cars dataset with 100 ms "time windows". The achived latency and throughput for both datasets are analogous.
+The graph generation and feature extraction hardware module enables pipelined processing of event data. For this demonstration the hardware module is implemented for "multiple sequences" mode (to enable classification on multiple event files). For MNIST-DVS dataset, due to it's low dynamics, the classification is calculated based on the 200 ms data samples. However, the hardware module was also evaluated on the N-Cars dataset with 100 ms "time windows". The achieved latency and throughput are similar for both datasets.
 
 ![Diagram](img/Diagram.png)
 
@@ -64,7 +64,7 @@ Simple synchronous delay on data.
 
 ### `./async_conv.sv` module
 
-Asynchronous convolution for event-by-event processing (Linear layer + ReLU). For each incoming event and each of it's edge, the matrix multiplication is applied. For the maximum of 29 edges and one "self-loop" two multiplixation modules are used for 15 sequential operations. The weights and biases stored in DRAM are included in module's input. 
+Asynchronous convolution for event-by-event processing (Linear layer + ReLU). For each incoming event and each of it's edges, the matrix multiplication is applied. For the maximum of 29 edges and one "self-loop" two multiplixation modules are used for 15 sequential operations. The weights and biases stored in DRAM are included in module's input. 
 
 ### `./matrix_multiplication.sv` module
 
@@ -76,7 +76,7 @@ Relaxing MaxPool layer. For 4x4 MaxPool all events are accumulated for 200/32ms 
 
 ### `./feature_memory.sv` module
 
-Memory used to store feature maps between consecutive layers. The three-memory switching mechanism enables efficient use of memory - when the previous layer in the model writes data to one of the memories, the next layer reads values from the others. In this way, each layer can perform calculations in parallel, as long as data is available at its input. 
+Memory used to store feature maps between consecutive layers. The three-memory switching mechanism enables efficient use of memory - when the previous layer in the model writes data to one of the memories, the next layer reads values from the others. In this way, each layer can perform calculations in parallel, as long as data is available at its input.
 
 ### `./sync_conv.sv` module
 
