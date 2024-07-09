@@ -7,7 +7,7 @@
 #include "ff.h"
 #include "xtime_l.h"
 #include "xil_io.h"
-#define ZERO_POINT_IN 213 //165
+#define ZERO_POINT_IN 213
 
 XTime tEnd, tStart;
 static FIL fil;
@@ -29,10 +29,10 @@ char go;
 char mnist_class;
 char mnist_sample;
 u32 data_in = 0;
-int chars = 203078+700;//229184+2000;//203078+700;
-char DestinationAddress[203078+700];//[229184+2000];//[203078+700];
-u32 event_data[12279+50][4];//[14631][4];//[12279+50][4];
-int charsW = 156712;//26700;
+int chars = 203078+700;
+char DestinationAddress[203078+700];
+u32 event_data[12279+50][4];
+int charsW = 156712;
 int weights_data[4096][10];
 int features[4096];
 int mod_cnt = 0;
@@ -64,88 +64,91 @@ int main()
 
 	while(1)
 	{
-		int size = 12279+50;//14631;//12279+50;
+		int size = 12279+50;
 
 		std::cout << "--------------------------------------------------------------" << std::endl;
 		std::cout << "Input digit (0-9), otherwise quit: ";
 		std::cin >> mnist_class;
 		std::cout << mnist_class << std::endl;
 
-		//NEW
-		std::cout << "--------------------------------------------------------------" << std::endl;
-		std::cout << "Input file number (0-9): ";
-		std::cin >> mnist_sample;
-		std::cout << mnist_sample << std::endl;
-
-		if(int(mnist_class) >=48 && int(mnist_class) <= 57 && int(mnist_sample) >=48 && int(mnist_sample) <= 57)
+		if(int(mnist_class) >=48 && int(mnist_class) <= 57)
 		{
-			std::string number = "";
-			number.append("m");// = "m" + ".txt";// + std::__cxx11::to_string(go) + number[2];
-			number.append(std::__cxx11::to_string(int(mnist_class)-48));
-			number.append(std::__cxx11::to_string(int(mnist_sample)-48));
-			number.append(".txt");
+			//NEW
+			std::cout << "--------------------------------------------------------------" << std::endl;
+			std::cout << "Input file number (0-9): ";
+			std::cin >> mnist_sample;
+			std::cout << mnist_sample << std::endl;
 
-			strcpy(data_name, number.c_str());
-
-			u8 dataPtr = 0;
-			std::cout << "Reading events... ";// << std::endl;
-
-			int data = loadFile(&dataPtr, data_name, chars);
-			int counter = 0;
-
-			char* token = strtok(DestinationAddress, " \n");
-			while (token != NULL)
+			if(int(mnist_sample) >=48 && int(mnist_sample) <= 57)
 			{
-				event_data[int(counter / 4)][int(counter % 4)] = std::__cxx11::stoi(token);
-				counter = counter + 1;
-				token = strtok(NULL, " \n");
-			}
-			std::cout << "done!" << std::endl;
+				std::string number = "";
+				number.append("m");
+				number.append(std::__cxx11::to_string(int(mnist_class)-48));
+				number.append(std::__cxx11::to_string(int(mnist_sample)-48));
+				number.append(".txt");
 
-			size = int(counter / 4);
+				strcpy(data_name, number.c_str());
 
-			dataPtr = 0;
-			std::cout << "Reading weights... ";// << std::endl;
-			data = loadFile(&dataPtr, data_name_weights, charsW);
-			counter = 0;
+				u8 dataPtr = 0;
+				std::cout << "Reading events... ";
 
-			char* tokenW = strtok(DestinationAddress, " \n");
-			while (tokenW != NULL)
-			{
-				weights_data[int(counter / 10)][int(counter % 10)] = std::__cxx11::stoi(tokenW);
-				counter = counter + 1;
-				tokenW = strtok(NULL, " \n");
-			}
-			std::cout << "done!" << std::endl;
+				int data = loadFile(&dataPtr, data_name, chars);
+				int counter = 0;
 
-			unsigned int wait = 0;
-			u32 timestamp = 0;
-			u32 next_timestamp = 0;
-			u32 x = 0;
-			u32 y = 0;
-			u32 polarity = 0;
-			u32 valid = 0;
-			u32 data_to_send1 = 0;
-			u32 data_to_send2 = 0;
+				char* token = strtok(DestinationAddress, " \n");
+				while (token != NULL)
+				{
+					event_data[int(counter / 4)][int(counter % 4)] = std::__cxx11::stoi(token);
+					counter = counter + 1;
+					token = strtok(NULL, " \n");
+				}
+				std::cout << "done!" << std::endl;
 
-			XTime_GetTime(&tStart);
-			for(int i = 0; i < size; i++)
-			{
-				timestamp = event_data[i][2];
-				if(i < size - 1)
-					next_timestamp = event_data[i+1][2];
-				x = event_data[i][0];
-				y = event_data[i][1];
-				polarity = event_data[i][3];
-				valid = 1;
-				data_to_send1 = valid + 2*polarity + 4*y + 256*4*x;
-				data_to_send2 = timestamp;
-				Xil_Out32(XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR, data_to_send1);
-				Xil_Out32(XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR, data_to_send2);
-				wait = next_timestamp - timestamp;
-				usleep(wait);
-				if(timestamp > 200000)
-					break;
+				size = int(counter / 4);
+
+				dataPtr = 0;
+				std::cout << "Reading weights... ";
+				data = loadFile(&dataPtr, data_name_weights, charsW);
+				counter = 0;
+
+				char* tokenW = strtok(DestinationAddress, " \n");
+				while (tokenW != NULL)
+				{
+					weights_data[int(counter / 10)][int(counter % 10)] = std::__cxx11::stoi(tokenW);
+					counter = counter + 1;
+					tokenW = strtok(NULL, " \n");
+				}
+				std::cout << "done!" << std::endl;
+
+				unsigned int wait = 0;
+				u32 timestamp = 0;
+				u32 next_timestamp = 0;
+				u32 x = 0;
+				u32 y = 0;
+				u32 polarity = 0;
+				u32 valid = 0;
+				u32 data_to_send1 = 0;
+				u32 data_to_send2 = 0;
+
+				XTime_GetTime(&tStart);
+				for(int i = 0; i < size; i++)
+				{
+					timestamp = event_data[i][2];
+					if(i < size - 1)
+						next_timestamp = event_data[i+1][2];
+					x = event_data[i][0];
+					y = event_data[i][1];
+					polarity = event_data[i][3];
+					valid = 1;
+					data_to_send1 = valid + 2*polarity + 4*y + 256*4*x;
+					data_to_send2 = timestamp;
+					Xil_Out32(XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR, data_to_send1);
+					Xil_Out32(XPAR_AXI_BRAM_CTRL_0_S_AXI_BASEADDR, data_to_send2);
+					wait = next_timestamp - timestamp;
+					usleep(wait);
+					if(timestamp > 200000)
+						break;
+				}
 			}
 		}
 
@@ -164,7 +167,7 @@ int ScuGicInterrupt_Init()
 {
 	int Status;
 	Xil_ExceptionInit();
-	GicConfig = XScuGic_LookupConfig(XPAR_SCUGIC_0_DEVICE_ID);//XPAR_PS7_SCUGIC_0_DEVICE_ID);
+	GicConfig = XScuGic_LookupConfig(XPAR_SCUGIC_0_DEVICE_ID);
 	if (NULL == GicConfig)
 	{
 		return XST_FAILURE;
