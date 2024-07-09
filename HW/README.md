@@ -21,7 +21,7 @@ In this diagram, the asynchronous part (event-by-event processing) is highlighte
 ## Open design and generate bitstream manual
 
 1. Clone this repository.
-2. Navigate to `repository/HW/src_feature_extractor`, open `mnist_pkg.sv` file and set correct `REPO_PATH` parameter (top repository directory).
+2. Navigate to `repository/HW/src_feature_extractor`, open `mnist_pkg.sv` file and set correct `REPO_PATH` parameter (top repository directory). The code presented was implemented on the Ubuntu 22.04 operating system. If you are using Windows, you will need to make an additional edit to `MEMORY_DIR_PATH` parameter in line 53 of the `top.sv` file (due to the use of backslash instead of fraction slash).
 2. Open Vivado 2022.2 (module tested exclusively for this version).
 3. Navigate to `repository/HW/` directory in Vivado `TCL console`.
 4. Run `source build_project.tcl` to create Vivado project with our hardware module.
