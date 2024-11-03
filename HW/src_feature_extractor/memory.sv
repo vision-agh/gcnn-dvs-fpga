@@ -25,8 +25,8 @@ module memory #(
     output logic [DWIDTH-1:0] doutb    // Data Output
 );
 
-    (* ram_style = RAM_TYPE *) logic [DWIDTH-1:0] mem[(1<<AWIDTH)-1:0]= '{default:0}; // Memory Declaration
-
+    (* ram_style = RAM_TYPE *) reg [DWIDTH-1:0] mem [(1<<AWIDTH)-1:0] = '{default:0}; // Memory Declaration
+    
     // RAM : Read has one latency, Write has one latency as well.
     always @ (posedge clk) begin
         if (mem_ena) begin
@@ -34,7 +34,7 @@ module memory #(
             else     douta <= mem[addra];
         end     
     end
-
+    
     // RAM : Read has one latency, Write has one latency as well.
     always @ (posedge clk) begin
         if (mem_enb) begin
