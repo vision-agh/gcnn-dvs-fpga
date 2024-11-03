@@ -21,12 +21,6 @@ module top #(
     input logic                       polarity,
     input logic                       is_valid,
 
-//    output logic                             conv2_wea,
-//    output logic [ADDR_WIDTH_MAXPOOL1-1 : 0] conv2_out_addr,
-//    output logic [graph_pkg::PRECISION-1 :0] conv2_out_features [31 : 0],
-//    output logic [17:0]                      conv2_out_edges,
-//    output logic [1:0]                       conv2_mem_ptr
-
     output logic [$clog2(4*4*4)-1 : 0]        out_addr,
     output logic [graph_pkg::PRECISION-1 : 0] out_data,
     output logic                              out_valid
