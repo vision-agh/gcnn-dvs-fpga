@@ -1,9 +1,10 @@
 module feature_memory #(
-    parameter int GRAPH_SIZE     = 32,
-    parameter int PRECISION	     = graph_pkg::PRECISION,
-    parameter int FEATURE_DIM    = 16,
-    parameter int ADDR_WIDTH     = $clog2(GRAPH_SIZE*GRAPH_SIZE),
-    parameter int DATA_WIDTH     = (FEATURE_DIM*PRECISION) + (9*2) //edges
+    parameter int GRAPH_SIZE  = 32,
+    parameter int PRECISION	  = graph_pkg::PRECISION,
+    parameter int FEATURE_DIM = 16,
+    parameter int ADDR_WIDTH  = $clog2(GRAPH_SIZE*GRAPH_SIZE),
+    parameter int DATA_WIDTH  = (FEATURE_DIM*PRECISION) + (9*2), //edges
+    parameter RAM_TYPE        = "block"
 )( 
     input logic	                       clk,
     input logic	                       reset,
@@ -87,7 +88,7 @@ module feature_memory #(
     memory #(
         .AWIDTH   ( ADDR_WIDTH ),
         .DWIDTH   ( DATA_WIDTH ),
-        .RAM_TYPE ( "block"    )
+        .RAM_TYPE ( RAM_TYPE   )
     ) feature_0   (
         .clk      ( clk      ),
         .mem_ena  ( ena[0]   ),
@@ -104,7 +105,7 @@ module feature_memory #(
     memory #(
         .AWIDTH   ( ADDR_WIDTH ),
         .DWIDTH   ( DATA_WIDTH ),
-        .RAM_TYPE ( "block"    )
+        .RAM_TYPE ( RAM_TYPE   )
     ) feature_1   (
         .clk      ( clk      ),
         .mem_ena  ( ena[1]   ),
@@ -121,7 +122,7 @@ module feature_memory #(
     memory #(
         .AWIDTH   ( ADDR_WIDTH ),
         .DWIDTH   ( DATA_WIDTH ),
-        .RAM_TYPE ( "block"    )
+        .RAM_TYPE ( RAM_TYPE   )
     ) feature_2   (
         .clk      ( clk      ),
         .mem_ena  ( ena[2]   ),

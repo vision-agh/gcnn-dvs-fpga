@@ -23,27 +23,15 @@ module top #(
 	input logic			              polarity,
 	input logic                       is_valid,
 
-//    Final output
     output logic [$clog2(4*4*4)-1 : 0]        out_addr,
     output logic [graph_pkg::PRECISION-1 : 0] out_data,
     output logic                              out_valid
 
-//     output logic        [graph_pkg::PRECISION-1 :0]          features_to_maxpool1 [15 : 0],
-//     output graph_pkg::event_type                             event_to_maxpool1,
-//     output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1
-
-    // Alternative interface for tests
-//    output logic [graph_pkg::PRECISION-1 :0]   features [63 : 0],
-//    output [ADDR_WIDTH_MAXPOOL2-1:0]           out_addr,
-//    output logic [17:0]                        out_edges,
-//	output logic                               out_valid,
-//	output logic [1:0]                         mem_ptr
-
-//    output logic        [graph_pkg::PRECISION-1 :0]          features [15 : 0],
-//    output graph_pkg::event_type                             events,
-//    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges
-
 );
+
+    // String paths for weights memories
+    localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/configs/Large_50ms_256/"};
+
     localparam ZERO_POINT_CONV1 = 128;
     localparam MULTIPLIER_OUT_CONV1 = 16385125;
     localparam int SCALE_IN_CONV1 [2:0] = {127, 85, 42};
@@ -53,24 +41,28 @@ module top #(
     localparam MULTIPLIER_OUT_CONV2 = 11639801;
     localparam SCALE_IN_CONV2 = 42;
     localparam ZERO_POINT_WEIGHT_CONV2 = 127;
+    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2_param.mem"};
 
     localparam ZERO_POINT_IN_CONV3 = ZERO_POINT_OUT_CONV2;
     localparam ZERO_POINT_OUT_CONV3 = 128;
     localparam MULTIPLIER_OUT_CONV3 = 11262625;
     localparam SCALE_IN_CONV3 = 64;
     localparam ZERO_POINT_WEIGHT_CONV3 = 127;
+    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3_param.mem"};
 
     localparam ZERO_POINT_IN_CONV4 = ZERO_POINT_OUT_CONV3;
     localparam ZERO_POINT_OUT_CONV4 = 128;
     localparam MULTIPLIER_OUT_CONV4 = 5689941;
     localparam SCALE_IN_CONV4 = 128;
     localparam ZERO_POINT_WEIGHT_CONV4 = 128;
+    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4_param.mem"};
 
     localparam ZERO_POINT_IN_CONV5 = ZERO_POINT_OUT_CONV4;
     localparam ZERO_POINT_OUT_CONV5 = 128;
     localparam MULTIPLIER_OUT_CONV5 = 4112907;
     localparam SCALE_IN_CONV5 = 128;
     localparam ZERO_POINT_WEIGHT_CONV5 = 128;
+    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "conv5_param.mem"};
 
     /////////////////////////////////////////
     //           GENERATE GRAPH            //
@@ -259,7 +251,8 @@ module top #(
         .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV2 ),
         .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV2 ),
         .SCALE_IN          ( SCALE_IN_CONV2       ),
-        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV2 )
+        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV2 ),
+        .INIT_PATH   ( INIT_PATH_CONV2)
     ) conv2 (
         .clk        ( clk                ),
         .reset      ( reset              ),
@@ -361,9 +354,9 @@ module top #(
         .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV3 ),
         .PARALLEL_MUL      ( 16                   ),
         .SCALE_IN          ( SCALE_IN_CONV3       ),
-        .INIT_PATH         ( "/home/power-station/Repo/Event2Graph/mem/ncaltech_large/tiny_conv3_param.mem" ),
         .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV3 ),
-        .USE_DSP ( 1 )
+        .USE_DSP ( 1 ),
+        .INIT_PATH   ( INIT_PATH_CONV3)
     ) u_conv3 (
         .clk        ( clk                ),
         .reset      ( reset              ),
@@ -480,8 +473,8 @@ module top #(
         .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV4 ),
         .SCALE_IN          ( SCALE_IN_CONV4       ),
         .SCALE_IN_NEG      ( 127                  ),
-        .INIT_PATH         ( "/home/power-station/Repo/Event2Graph/mem/ncaltech_large/tiny_conv4_param.mem" ),
-        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV4 )
+        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV4 ),
+        .INIT_PATH   ( INIT_PATH_CONV4)
     ) conv4 (
         .clk        ( clk                ),
         .reset      ( reset              ),
@@ -571,8 +564,8 @@ module top #(
         .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV5    ),
         .SCALE_IN          ( SCALE_IN_CONV5          ),
         .SCALE_IN_NEG      ( 127                     ),
-        .INIT_PATH         ( "/home/power-station/Repo/Event2Graph/mem/ncaltech_large/tiny_conv5_param.mem" ),
-        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV5 )
+        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV5 ),
+        .INIT_PATH   ( INIT_PATH_CONV5)
     ) conv5 (
         .clk        ( clk                ),
         .reset      ( reset              ),

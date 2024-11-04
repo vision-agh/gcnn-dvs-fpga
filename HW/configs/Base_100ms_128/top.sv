@@ -44,7 +44,7 @@ module top #(
     // u_out_serialize      -> Output feature map serialization 
 
     // String paths for weights memories
-    localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/mem/"};
+    localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/configs/Base_100ms_128/"};
 
     // Parameters for each convolutional layer
     localparam ZERO_POINT_CONV1 = 149;
@@ -56,28 +56,28 @@ module top #(
     localparam MULTIPLIER_OUT_CONV2 = 40012032;
     localparam SCALE_IN_CONV2 = 35;
     localparam ZERO_POINT_WEIGHT_CONV2 = 190;
-    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "tiny_conv2_param.mem"};
+    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2_param.mem"};
 
     localparam ZERO_POINT_IN_CONV3 = ZERO_POINT_OUT_CONV2;
     localparam ZERO_POINT_OUT_CONV3 = 203;
     localparam MULTIPLIER_OUT_CONV3 = 47508080;
     localparam SCALE_IN_CONV3 = 18;
     localparam ZERO_POINT_WEIGHT_CONV3 = 165;
-    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "tiny_conv3_param.mem"};
+    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3_param.mem"};
 
     localparam ZERO_POINT_IN_CONV4 = ZERO_POINT_OUT_CONV3;
     localparam ZERO_POINT_OUT_CONV4 = 195;
     localparam MULTIPLIER_OUT_CONV4 = 51488348;
     localparam SCALE_IN_CONV4 = 17;
     localparam ZERO_POINT_WEIGHT_CONV4 = 173;
-    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "tiny_conv4_param.mem"};
+    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4_param.mem"};
 
     localparam ZERO_POINT_IN_CONV5 = ZERO_POINT_OUT_CONV4;
     localparam ZERO_POINT_OUT_CONV5 = 213;
     localparam MULTIPLIER_OUT_CONV5 = 71936992;
     localparam SCALE_IN_CONV5 = 13;
     localparam ZERO_POINT_WEIGHT_CONV5 = 199;
-    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "tiny_conv5_param.mem"};
+    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "conv5_param.mem"};
 
     /////////////////////////////////////////
     //           GENERATE GRAPH            //

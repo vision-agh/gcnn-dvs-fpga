@@ -17,7 +17,7 @@ module top_synth #(
     output logic [$clog2(4*4*4)-1 : 0]        out_addr,
     output logic [graph_pkg::PRECISION-1 : 0] out_data,
     output logic                              out_valid
-
+);
 
     top #(
         .MAX_X_COORD ( MAX_X_COORD ),
@@ -30,9 +30,9 @@ module top_synth #(
         .y_coord    ( y_coord     ),
         .polarity   ( polarity    ),
         .is_valid   ( is_valid    ),
-        .out_addr  ( out_addr           ),
-        .out_data  ( out_data           ),
-        .out_valid ( out_valid          )
+        .out_addr   ( out_addr    ),
+        .out_data   ( out_data    ),
+        .out_valid  ( out_valid   )
     );
 
 
