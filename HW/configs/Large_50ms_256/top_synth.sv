@@ -1,7 +1,7 @@
 module top_synth #(
     parameter int MAX_X_COORD    = 240,
     parameter int MAX_Y_COORD    = 180,
-    parameter int INPUT_BIT_TIME = 32,   
+    parameter int INPUT_BIT_TIME = 32,
     parameter int INPUT_BIT_X    = 8,
     parameter int INPUT_BIT_Y    = 8
 
@@ -19,7 +19,7 @@ module top_synth #(
     output logic                              out_valid
 );
 
-    top #(
+    top #( 
         .MAX_X_COORD ( MAX_X_COORD ),
         .MAX_Y_COORD ( MAX_Y_COORD )
     ) u_top (
@@ -30,9 +30,9 @@ module top_synth #(
         .y_coord    ( y_coord     ),
         .polarity   ( polarity    ),
         .is_valid   ( is_valid    ),
-        .out_addr  ( out_addr     ),
-        .out_data  ( out_data     ),
-        .out_valid ( out_valid    )
+        .out_addr   ( out_addr    ),
+        .out_data   ( out_data    ),
+        .out_valid  ( out_valid   )
     );
 
 
