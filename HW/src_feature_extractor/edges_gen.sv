@@ -158,7 +158,7 @@ module edges_gen #(
     logic [$clog2(RADIUS) : 0] diff_t_a;
     logic                      condition_a_1, condition_a_2, connect_a;
     assign diff_t_a = fifo_event.t >= douta[GRAPH_WIDTH+1:2] ? fifo_event.t-douta[GRAPH_WIDTH+1:2] : (fifo_event.t+128)-douta[GRAPH_WIDTH+1:2];
-    assign condition_a_1 = ((fifo_event.t-douta[GRAPH_WIDTH+1:2]) < RADIUS) && 
+    assign condition_a_1 = ((fifo_event.t-douta[GRAPH_WIDTH+1:2]) <= RADIUS) && 
                            fifo_window_counter == douta[DATA_WIDTH-1:GRAPH_WIDTH+2] && 
                            (fifo_event.t >= douta[GRAPH_WIDTH+1:2]);
     assign condition_a_2 = fifo_event.t < RADIUS && 
@@ -169,7 +169,7 @@ module edges_gen #(
     logic [$clog2(RADIUS) : 0] diff_t_b;
     logic                      condition_b_1, condition_b_2, connect_b;
     assign diff_t_b = fifo_event.t >= doutb[GRAPH_WIDTH+1:2] ? fifo_event.t-doutb[GRAPH_WIDTH+1:2] : (fifo_event.t+128)-doutb[GRAPH_WIDTH+1:2];
-    assign condition_b_1 = ((fifo_event.t-doutb[GRAPH_WIDTH+1:2]) < RADIUS) && 
+    assign condition_b_1 = ((fifo_event.t-doutb[GRAPH_WIDTH+1:2]) <= RADIUS) && 
                            fifo_window_counter == doutb[DATA_WIDTH-1:GRAPH_WIDTH+2] && 
                            (fifo_event.t >= doutb[GRAPH_WIDTH+1:2]);
     assign condition_b_2 = fifo_event.t < RADIUS && 
@@ -263,7 +263,7 @@ module edges_gen #(
                 edges[i].t <= edges_reg[i].t;
                 edges[i].is_connected <= edges_reg[i].is_connected ? (((MEM_ADDR_A_X[i]**2) +
                                                                        (MEM_ADDR_A_Y[i]**2) +
-                                                                      ((edges_reg[i].t)**2)) < (RADIUS**2)+1) : '0;
+                                                                      ((edges_reg[i].t)**2)) <= (RADIUS**2)) : '0;
             end
         end
         for (j=MEMORY_OPS_NUM-1; j<graph_pkg::MAX_EDGES; j++) begin: SECOND_14
@@ -272,7 +272,7 @@ module edges_gen #(
                 edges[j].t <= edges_reg[j].t;
                 edges[j].is_connected <= edges_reg[j].is_connected ? (((MEM_ADDR_B_X[j-(MEMORY_OPS_NUM-1)]**2) +
                                                                        (MEM_ADDR_B_Y[j-(MEMORY_OPS_NUM-1)]**2) +
-                                                                       ((edges_reg[j].t)**2)) < (RADIUS**2)+1) : '0;
+                                                                       ((edges_reg[j].t)**2)) <= (RADIUS**2)) : '0;
             end
         end
     endgenerate

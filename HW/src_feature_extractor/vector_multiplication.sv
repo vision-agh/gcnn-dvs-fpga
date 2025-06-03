@@ -21,6 +21,8 @@ module vector_multiplication #(
     logic signed [63:0]        debug_bias ;
     logic signed [63:0]        debug_mul;
     logic signed [31:0]        bias_reg;
+    logic signed [63:0]        product;
+    logic signed [63:0]        product2;
 
     genvar p;
     generate
@@ -37,7 +39,7 @@ module vector_multiplication #(
 
     always @(posedge clk) begin
         matrix_result[PARALLEL] = 0;
-        for (int j=INPUT_DIM-3; j<INPUT_DIM; j=j+1) begin: cols
+        for (int j=INPUT_DIM-2; j<INPUT_DIM; j=j+1) begin: cols
             matrix_result[PARALLEL] = matrix_result[PARALLEL] + (feature_matrix[j] * weight_matrix[j]);
         end
         matrix_result_reg[PARALLEL] <= matrix_result[PARALLEL];
@@ -49,7 +51,9 @@ module vector_multiplication #(
             debug_bias = debug_bias + matrix_result_reg[i];
         end
         debug_mul <= debug_bias;
-        output_matrix <= ((debug_mul*MULTIPLIER)>>>32) + ZERO_POINT;
+        product = debug_mul*MULTIPLIER;
+        product2 = product>>>32;
+        output_matrix <= product2 + ZERO_POINT + product[31];
         bias_reg <= bias;
     end
 

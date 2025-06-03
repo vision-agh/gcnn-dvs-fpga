@@ -33,7 +33,7 @@ module sync_conv #(
     output logic [1:0]                mem_ptr
 );
 
-    localparam CONV_IN_DIM = INPUT_DIM+3;
+    localparam CONV_IN_DIM = INPUT_DIM+2;
     localparam ITER_CNT_WIDTH = $clog2(OUTPUT_DIM);
     localparam IDLE = 2'd0;
     localparam CONV = 2'd1;
@@ -196,12 +196,12 @@ module sync_conv #(
         end
     endgenerate
 
-    logic signed [PRECISION:0] single_weight_reg [INPUT_DIM+2:0];
+    logic signed [PRECISION:0] single_weight_reg [INPUT_DIM+1:0];
     logic signed [31:0]        single_bias_reg;
-    logic signed [PRECISION:0] single_weight [INPUT_DIM+2:0];
+    logic signed [PRECISION:0] single_weight [INPUT_DIM+1:0];
     logic signed [31:0]        single_bias;
 
-    localparam WEIGHT_WIDTH = ((INPUT_DIM+3)*(PRECISION))+32; //bias
+    localparam WEIGHT_WIDTH = ((INPUT_DIM+2)*(PRECISION))+32; //bias
     logic [WEIGHT_WIDTH-1 : 0] weight_mem;
 
     memory_weights #(
@@ -219,12 +219,11 @@ module sync_conv #(
     always @(posedge clk) begin
         feature_mat_a[INPUT_DIM]   <= FEATURES_X[edge_counter_read];
         feature_mat_a[INPUT_DIM+1] <= FEATURES_Y[edge_counter_read];
-        feature_mat_a[INPUT_DIM+2] <= 0; //current events on A channel
     end
 
     genvar w;
     generate
-        for (w = 0; w < INPUT_DIM+3; w++) begin : weights_assign
+        for (w = 0; w < INPUT_DIM+2; w++) begin : weights_assign
             always @(posedge clk) begin
                 single_weight_reg[w] <= weight_mem[(((PRECISION)*(w+1))-1)+32 : ((PRECISION)*w)+32] - ZERO_POINT_WEIGHT;
             end
@@ -238,7 +237,7 @@ module sync_conv #(
     end
 
     vector_multiplication #(
-        .INPUT_DIM         ( INPUT_DIM+3    ),
+        .INPUT_DIM         ( INPUT_DIM+2    ),
         .MULTIPLIER        ( MULTIPLIER_OUT ),
         .ZERO_POINT        ( ZERO_POINT_OUT )
     ) mul_a (
@@ -265,11 +264,10 @@ module sync_conv #(
     always @(posedge clk) begin
         feature_mat_b[INPUT_DIM]   <= FEATURES_X[edge_counter_read];
         feature_mat_b[INPUT_DIM+1] <= FEATURES_Y[edge_counter_read];
-        feature_mat_b[INPUT_DIM+2] <= -SCALE_IN; //old events on B channel
     end
 
     vector_multiplication #(
-        .INPUT_DIM         ( INPUT_DIM+3    ),
+        .INPUT_DIM         ( INPUT_DIM+2    ),
         .MULTIPLIER        ( MULTIPLIER_OUT ),
         .ZERO_POINT        ( ZERO_POINT_OUT )
     ) mul_b (
