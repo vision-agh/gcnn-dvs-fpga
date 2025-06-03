@@ -4,8 +4,8 @@ module top #(
     parameter int MAX_X_COORD	 = 128,
     parameter int MAX_Y_COORD	 = 128,
     parameter int INPUT_BIT_TIME = 32,
-    parameter int INPUT_BIT_X    = 8,
-    parameter int INPUT_BIT_Y    = 8,
+    parameter int INPUT_BIT_X    = 7,
+    parameter int INPUT_BIT_Y    = 7,
     parameter int DATA_WIDTH_MAXPOOL1 = (16*graph_pkg::PRECISION) + (9*2),
     parameter int ADDR_WIDTH_MAXPOOL1 = $clog2(32*32),
     parameter int ADDR_WIDTH_MAXPOOL2 = $clog2(16*16),
@@ -21,9 +21,13 @@ module top #(
     input logic                       polarity,
     input logic                       is_valid,
 
-    output logic [$clog2(4*4*4)-1 : 0]        out_addr,
-    output logic [graph_pkg::PRECISION-1 : 0] out_data,
-    output logic                              out_valid
+//    output logic [$clog2(4*4*4)-1 : 0]        out_addr,
+//    output logic [graph_pkg::PRECISION-1 : 0] out_data,
+//    output logic                              out_valid
+
+    output logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0],
+    output graph_pkg::event_type                             event_to_maxpool1,
+    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1
 
 );
     // GCNN accelerator for MNIST-DVS classification with the following network structure:
@@ -44,40 +48,40 @@ module top #(
     // u_out_serialize      -> Output feature map serialization 
 
     // String paths for weights memories
-    localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/configs/Small_100ms_128/"};
+    localparam string MEMORY_DIR_PATH = {"/home/pwz/Repo/gcnn-dvs-fpga/HW/configs/cvpr_demo"};
 
     // Parameters for each convolutional layer
-    localparam ZERO_POINT_CONV1 = 149;
-    localparam MULTIPLIER_OUT_CONV1 = 25508880;
+    localparam ZERO_POINT_CONV1 = 131;
+    localparam MULTIPLIER_OUT_CONV1 = 30281098;
     localparam int SCALE_IN_CONV1 [2:0] = {127, 85, 42};
 
     localparam ZERO_POINT_IN_CONV2 = ZERO_POINT_CONV1;
-    localparam ZERO_POINT_OUT_CONV2 = 200;
-    localparam MULTIPLIER_OUT_CONV2 = 40012032;
-    localparam SCALE_IN_CONV2 = 35;
-    localparam ZERO_POINT_WEIGHT_CONV2 = 190;
-    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2_param.mem"};
+    localparam ZERO_POINT_OUT_CONV2 = 97;
+    localparam MULTIPLIER_OUT_CONV2 = 30234362;
+    localparam SCALE_IN_CONV2 = 38;
+    localparam ZERO_POINT_WEIGHT_CONV2 = 146;
+    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2.mem"};
 
     localparam ZERO_POINT_IN_CONV3 = ZERO_POINT_OUT_CONV2;
-    localparam ZERO_POINT_OUT_CONV3 = 203;
-    localparam MULTIPLIER_OUT_CONV3 = 47508080;
-    localparam SCALE_IN_CONV3 = 18;
-    localparam ZERO_POINT_WEIGHT_CONV3 = 165;
-    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3_param.mem"};
+    localparam ZERO_POINT_OUT_CONV3 = 99;
+    localparam MULTIPLIER_OUT_CONV3 = 31289998;
+    localparam SCALE_IN_CONV3 = 19;
+    localparam ZERO_POINT_WEIGHT_CONV3 = 120;
+    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3.mem"};
 
-    localparam ZERO_POINT_IN_CONV4 = ZERO_POINT_OUT_CONV3;
-    localparam ZERO_POINT_OUT_CONV4 = 195;
-    localparam MULTIPLIER_OUT_CONV4 = 51488348;
-    localparam SCALE_IN_CONV4 = 17;
-    localparam ZERO_POINT_WEIGHT_CONV4 = 173;
-    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4_param.mem"};
+//    localparam ZERO_POINT_IN_CONV4 = ZERO_POINT_OUT_CONV3;
+//    localparam ZERO_POINT_OUT_CONV4 = 195;
+//    localparam MULTIPLIER_OUT_CONV4 = 51488348;
+//    localparam SCALE_IN_CONV4 = 17;
+//    localparam ZERO_POINT_WEIGHT_CONV4 = 173;
+//    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4_param.mem"};
 
-    localparam ZERO_POINT_IN_CONV5 = ZERO_POINT_OUT_CONV4;
-    localparam ZERO_POINT_OUT_CONV5 = 213;
-    localparam MULTIPLIER_OUT_CONV5 = 71936992;
-    localparam SCALE_IN_CONV5 = 13;
-    localparam ZERO_POINT_WEIGHT_CONV5 = 199;
-    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "conv5_param.mem"};
+//    localparam ZERO_POINT_IN_CONV5 = ZERO_POINT_OUT_CONV4;
+//    localparam ZERO_POINT_OUT_CONV5 = 213;
+//    localparam MULTIPLIER_OUT_CONV5 = 71936992;
+//    localparam SCALE_IN_CONV5 = 13;
+//    localparam ZERO_POINT_WEIGHT_CONV5 = 199;
+//    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "conv5_param.mem"};
 
     /////////////////////////////////////////
     //           GENERATE GRAPH            //
@@ -110,31 +114,31 @@ module top #(
     //            weights 4x16             //
     /////////////////////////////////////////
 
-    logic signed [graph_pkg::PRECISION:0] weights_conv1 [15:0][3:0];
+    logic signed [graph_pkg::PRECISION:0] weights_conv1 [15:0][2:0];
     initial begin
-        weights_conv1[0] = {-6, 105, 45, 0};
-        weights_conv1[1] = {59, 2, -8, -23};
-        weights_conv1[2] = {56, -9, -7, -9};
-        weights_conv1[3] = {-3, -103, -47, -1};
-        weights_conv1[4] = {-9, -72, 40, 0};
-        weights_conv1[5] = {10, -1, -3, 2};
-        weights_conv1[6] = {112, 7, -14, -120};
-        weights_conv1[7] = {-13, 1, 98, 2};
-        weights_conv1[8] = {6, -30, 0, 12};
-        weights_conv1[9] = {130, -4, 11, 121};
-        weights_conv1[10] = {24, 11, 22, 10};
-        weights_conv1[11] = {73, 9, -24, 3};
-        weights_conv1[12] = {-17, -16, -98, -2};
-        weights_conv1[13] = {56, -4, 4, -3};
-        weights_conv1[14] = {18, 18, 11, 17};
-        weights_conv1[15] = {-7, 86, -34, -5};
+        weights_conv1[0] = {-114, -50, 41};
+        weights_conv1[1] = {86, -35, -47};
+        weights_conv1[2] = {75, 104, 41};
+        weights_conv1[3] = {-91, 71, -1};
+        weights_conv1[4] = {39, -116, 30};
+        weights_conv1[5] = {-28, 78, -79};
+        weights_conv1[6] = {-64, -50, 93};
+        weights_conv1[7] = {38, 96, -84};
+        weights_conv1[8] = {-73, -46, 76};
+        weights_conv1[9] = {50, -56, -94};
+        weights_conv1[10] = {-26, 120, 50};
+        weights_conv1[11] = {-40, 16, -133};
+        weights_conv1[12] = {57, 8, 122};
+        weights_conv1[13] = {50, -40, -99};
+        weights_conv1[14] = {95, -46, 54};
+        weights_conv1[15] = {-24, -102, 80};
     end
 
-    const logic signed [31:0] bias_conv1 [15:0] = {-3237, -3343, -845, -2419, -3417, -3539, -2513, -4369, -1880, -2075, -439, -1841, -2890, -1806, -2509, -2823};
+    const logic signed [31:0] bias_conv1 [15:0] = {1255, 187, 278, 1132, 1274, -926, 832, 301, 1291, 237, 1489, -5, -143, 506, -66, 755};
 
-    logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0];
-    graph_pkg::event_type                             event_to_maxpool1;
-    graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1;
+//    logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0];
+//    graph_pkg::event_type                             event_to_maxpool1;
+//    graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1;
 
    async_conv #(
        .MULTIPLIER_OUT ( MULTIPLIER_OUT_CONV1 ),
@@ -312,255 +316,255 @@ module top #(
         .mem_ptr    ( mem_ptr_conv3      )
     );
 
-    /////////////////////////////////////////
-    //           SYNC MAXPOOL 2            //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //           SYNC MAXPOOL 2            //
+//    /////////////////////////////////////////
 
-    logic [DATA_WIDTH_CONV2-1 : 0]    read_maxpool2;
-    logic [DATA_WIDTH_CONV2-1 : 0]    write_maxpool2;
-    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] addr_maxpool2;    
-    logic                             ena_maxpool2;
-    logic                             wea_maxpool2;
-    logic [1:0]                       mem_ptr_maxpool2;
+//    logic [DATA_WIDTH_CONV2-1 : 0]    read_maxpool2;
+//    logic [DATA_WIDTH_CONV2-1 : 0]    write_maxpool2;
+//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] addr_maxpool2;    
+//    logic                             ena_maxpool2;
+//    logic                             wea_maxpool2;
+//    logic [1:0]                       mem_ptr_maxpool2;
 
-    sync_maxpool u_maxpool_2 (
-       .clk          ( clk                  ),
-       .reset        ( reset                ),
-       .in_addr      ( out_addr_conv3       ),
-       .in_edges     ( out_edges_conv3      ),
-       .in_features  ( features_conv3       ),
-       .in_valid     ( out_valid_conv3      ),
-       .in_mem_ptr   ( mem_ptr_conv3        ),
-       .read         ( read_maxpool2        ),
-       .write        ( write_maxpool2       ),
-       .addr         ( addr_maxpool2        ),
-       .ena          ( ena_maxpool2         ),
-       .wea          ( wea_maxpool2         ),
-       .mem_ptr      ( mem_ptr_maxpool2     )
-    );
+//    sync_maxpool u_maxpool_2 (
+//       .clk          ( clk                  ),
+//       .reset        ( reset                ),
+//       .in_addr      ( out_addr_conv3       ),
+//       .in_edges     ( out_edges_conv3      ),
+//       .in_features  ( features_conv3       ),
+//       .in_valid     ( out_valid_conv3      ),
+//       .in_mem_ptr   ( mem_ptr_conv3        ),
+//       .read         ( read_maxpool2        ),
+//       .write        ( write_maxpool2       ),
+//       .addr         ( addr_maxpool2        ),
+//       .ena          ( ena_maxpool2         ),
+//       .wea          ( wea_maxpool2         ),
+//       .mem_ptr      ( mem_ptr_maxpool2     )
+//    );
 
-    /////////////////////////////////////////
-    //             FEATURE MEM 3           //
-    //          graph 16, feature 32       //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //             FEATURE MEM 3           //
+//    //          graph 16, feature 32       //
+//    /////////////////////////////////////////
 
-    logic [DATA_WIDTH_CONV2-1 : 0]    conv4_read_a;
-    logic [DATA_WIDTH_CONV2-1 : 0]    conv4_read_b;
-    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] conv4_read_addr;
-    logic                             conv4_clean;
-    logic                             conv4_switch;
+//    logic [DATA_WIDTH_CONV2-1 : 0]    conv4_read_a;
+//    logic [DATA_WIDTH_CONV2-1 : 0]    conv4_read_b;
+//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] conv4_read_addr;
+//    logic                             conv4_clean;
+//    logic                             conv4_switch;
 
-    feature_memory #(
-        .FEATURE_DIM ( 32 ),
-        .GRAPH_SIZE  ( 16 )
-    ) u_maxpool2_mem (
-       .clk        ( clk                ),
-       .reset      ( reset              ),
-       .in_read    ( read_maxpool2      ),
-       .in_write   ( write_maxpool2     ),
-       .in_addr    ( addr_maxpool2      ),
-       .in_ena     ( ena_maxpool2       ),
-       .in_wea     ( wea_maxpool2       ),
-       .in_mem_ptr ( mem_ptr_maxpool2   ),
-       .out_read_a ( conv4_read_a       ),
-       .out_read_b ( conv4_read_b       ),
-       .out_addr   ( conv4_read_addr    ),
-       .out_clean  ( conv4_clean        ),
-       .out_switch ( conv4_switch       )
-    );
+//    feature_memory #(
+//        .FEATURE_DIM ( 32 ),
+//        .GRAPH_SIZE  ( 16 )
+//    ) u_maxpool2_mem (
+//       .clk        ( clk                ),
+//       .reset      ( reset              ),
+//       .in_read    ( read_maxpool2      ),
+//       .in_write   ( write_maxpool2     ),
+//       .in_addr    ( addr_maxpool2      ),
+//       .in_ena     ( ena_maxpool2       ),
+//       .in_wea     ( wea_maxpool2       ),
+//       .in_mem_ptr ( mem_ptr_maxpool2   ),
+//       .out_read_a ( conv4_read_a       ),
+//       .out_read_b ( conv4_read_b       ),
+//       .out_addr   ( conv4_read_addr    ),
+//       .out_clean  ( conv4_clean        ),
+//       .out_switch ( conv4_switch       )
+//    );
 
 
-    /////////////////////////////////////////
-    //          SYNC CONVOLUTION 4         //
-    //            weights 35x64            //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //          SYNC CONVOLUTION 4         //
+//    //            weights 35x64            //
+//    /////////////////////////////////////////
 
-    logic out_valid_conv4;
-    logic [1:0] mem_ptr_conv4;
-    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv4;
-    logic [17 : 0] out_edges_conv4;
-    logic [7 : 0]  features_conv4 [31 : 0];
-    logic [DATA_WIDTH_CONV4-1 : 0] conv4_out_data;
+//    logic out_valid_conv4;
+//    logic [1:0] mem_ptr_conv4;
+//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv4;
+//    logic [17 : 0] out_edges_conv4;
+//    logic [7 : 0]  features_conv4 [31 : 0];
+//    logic [DATA_WIDTH_CONV4-1 : 0] conv4_out_data;
 
-    sync_conv #(
-        .GRAPH_SIZE        ( 16                      ),
-        .INPUT_DIM         ( 32                      ),
-        .OUTPUT_DIM        ( 32                      ),
-        .ZERO_POINT_IN     ( ZERO_POINT_IN_CONV4     ),
-        .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV4    ),
-        .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV4    ),
-        .SCALE_IN          ( SCALE_IN_CONV4          ),
-        .INIT_PATH         ( INIT_PATH_CONV4         ),
-        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV4 )
-    ) u_conv4 (
-        .clk        ( clk                ),
-        .reset      ( reset              ),
-        .in_data_a  ( conv4_read_a       ),
-        .in_data_b  ( conv4_read_b       ),
-        .in_addr    ( conv4_read_addr    ),
-        .in_clean   ( conv4_clean        ),
-        .in_switch  ( conv4_switch       ),
-        .out_addr   ( out_addr_conv4     ),
-        .out_edges  ( out_edges_conv4    ),
-        .features   ( features_conv4     ),
-        .out_valid  ( out_valid_conv4    ),
-        .mem_ptr    ( mem_ptr_conv4      )
-    );
+//    sync_conv #(
+//        .GRAPH_SIZE        ( 16                      ),
+//        .INPUT_DIM         ( 32                      ),
+//        .OUTPUT_DIM        ( 32                      ),
+//        .ZERO_POINT_IN     ( ZERO_POINT_IN_CONV4     ),
+//        .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV4    ),
+//        .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV4    ),
+//        .SCALE_IN          ( SCALE_IN_CONV4          ),
+//        .INIT_PATH         ( INIT_PATH_CONV4         ),
+//        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV4 )
+//    ) u_conv4 (
+//        .clk        ( clk                ),
+//        .reset      ( reset              ),
+//        .in_data_a  ( conv4_read_a       ),
+//        .in_data_b  ( conv4_read_b       ),
+//        .in_addr    ( conv4_read_addr    ),
+//        .in_clean   ( conv4_clean        ),
+//        .in_switch  ( conv4_switch       ),
+//        .out_addr   ( out_addr_conv4     ),
+//        .out_edges  ( out_edges_conv4    ),
+//        .features   ( features_conv4     ),
+//        .out_valid  ( out_valid_conv4    ),
+//        .mem_ptr    ( mem_ptr_conv4      )
+//    );
 
-    /////////////////////////////////////////
-    //             FEATURE MEM 4           //
-    //          graph 16, feature 64       //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //             FEATURE MEM 4           //
+//    //          graph 16, feature 64       //
+//    /////////////////////////////////////////
 
-    always @(posedge clk) begin
-        conv4_out_data[17:0] <= out_edges_conv4;
-    end
-    genvar m;
-    generate
-        for (m = 0; m < 32; m++) begin : conv4_data_read
-            assign conv4_out_data[((graph_pkg::PRECISION*(m+1))-1)+(9*2) : (graph_pkg::PRECISION*m)+(9*2)] = features_conv4[m];
-        end
-    endgenerate
+//    always @(posedge clk) begin
+//        conv4_out_data[17:0] <= out_edges_conv4;
+//    end
+//    genvar m;
+//    generate
+//        for (m = 0; m < 32; m++) begin : conv4_data_read
+//            assign conv4_out_data[((graph_pkg::PRECISION*(m+1))-1)+(9*2) : (graph_pkg::PRECISION*m)+(9*2)] = features_conv4[m];
+//        end
+//    endgenerate
 
-    logic [DATA_WIDTH_CONV4-1 : 0]    conv5_read_a;
-    logic [DATA_WIDTH_CONV4-1 : 0]    conv5_read_b;
-    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] conv5_read_addr;
-    logic                             conv5_clean;
-    logic                             conv5_switch;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    conv5_read_a;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    conv5_read_b;
+//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] conv5_read_addr;
+//    logic                             conv5_clean;
+//    logic                             conv5_switch;
 
-    feature_memory #(
-        .FEATURE_DIM ( 32 ),
-        .GRAPH_SIZE  ( 16 )
-    ) u_conv4_mem (
-       .clk        ( clk                ),
-       .reset      ( reset              ),
-       .in_read    (                    ),
-       .in_write   ( conv4_out_data     ),
-       .in_addr    ( out_addr_conv4     ),
-       .in_ena     ( out_valid_conv4    ),
-       .in_wea     ( out_valid_conv4    ),
-       .in_mem_ptr ( mem_ptr_conv4      ),
-       .out_read_a ( conv5_read_a       ),
-       .out_read_b ( conv5_read_b       ),
-       .out_addr   ( conv5_read_addr    ),
-       .out_clean  ( conv5_clean        ),
-       .out_switch ( conv5_switch       )
-    );
+//    feature_memory #(
+//        .FEATURE_DIM ( 32 ),
+//        .GRAPH_SIZE  ( 16 )
+//    ) u_conv4_mem (
+//       .clk        ( clk                ),
+//       .reset      ( reset              ),
+//       .in_read    (                    ),
+//       .in_write   ( conv4_out_data     ),
+//       .in_addr    ( out_addr_conv4     ),
+//       .in_ena     ( out_valid_conv4    ),
+//       .in_wea     ( out_valid_conv4    ),
+//       .in_mem_ptr ( mem_ptr_conv4      ),
+//       .out_read_a ( conv5_read_a       ),
+//       .out_read_b ( conv5_read_b       ),
+//       .out_addr   ( conv5_read_addr    ),
+//       .out_clean  ( conv5_clean        ),
+//       .out_switch ( conv5_switch       )
+//    );
 
-    logic out_valid_conv5;
-    logic [1:0] mem_ptr_conv5;
-    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
-    logic [17 : 0] out_edges_conv5;
-    logic [7 : 0]  features_conv5 [31 : 0];
+//    logic out_valid_conv5;
+//    logic [1:0] mem_ptr_conv5;
+//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
+//    logic [17 : 0] out_edges_conv5;
+//    logic [7 : 0]  features_conv5 [31 : 0];
 
-    /////////////////////////////////////////
-    //          SYNC CONVOLUTION 5         //
-    //            weights 67x64            //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //          SYNC CONVOLUTION 5         //
+//    //            weights 67x64            //
+//    /////////////////////////////////////////
 
-    sync_conv #(
-        .GRAPH_SIZE        ( 16                      ),
-        .INPUT_DIM         ( 32                      ),
-        .OUTPUT_DIM        ( 32                      ),
-        .ZERO_POINT_IN     ( ZERO_POINT_IN_CONV5     ),
-        .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV5    ),
-        .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV5    ),
-        .SCALE_IN          ( SCALE_IN_CONV5          ),
-        .INIT_PATH         ( INIT_PATH_CONV5         ),
-        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV5 )
-    ) u_conv5 (
-        .clk        ( clk                ),
-        .reset      ( reset              ),
-        .in_data_a  ( conv5_read_a       ),
-        .in_data_b  ( conv5_read_b       ),
-        .in_addr    ( conv5_read_addr    ),
-        .in_clean   ( conv5_clean        ),
-        .in_switch  ( conv5_switch       ),
-        .out_addr   ( out_addr_conv5     ),
-        .out_edges  ( out_edges_conv5    ),
-        .features   ( features_conv5     ),
-        .out_valid  ( out_valid_conv5    ),
-        .mem_ptr    ( mem_ptr_conv5      )
-    );
+//    sync_conv #(
+//        .GRAPH_SIZE        ( 16                      ),
+//        .INPUT_DIM         ( 32                      ),
+//        .OUTPUT_DIM        ( 32                      ),
+//        .ZERO_POINT_IN     ( ZERO_POINT_IN_CONV5     ),
+//        .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV5    ),
+//        .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV5    ),
+//        .SCALE_IN          ( SCALE_IN_CONV5          ),
+//        .INIT_PATH         ( INIT_PATH_CONV5         ),
+//        .ZERO_POINT_WEIGHT ( ZERO_POINT_WEIGHT_CONV5 )
+//    ) u_conv5 (
+//        .clk        ( clk                ),
+//        .reset      ( reset              ),
+//        .in_data_a  ( conv5_read_a       ),
+//        .in_data_b  ( conv5_read_b       ),
+//        .in_addr    ( conv5_read_addr    ),
+//        .in_clean   ( conv5_clean        ),
+//        .in_switch  ( conv5_switch       ),
+//        .out_addr   ( out_addr_conv5     ),
+//        .out_edges  ( out_edges_conv5    ),
+//        .features   ( features_conv5     ),
+//        .out_valid  ( out_valid_conv5    ),
+//        .mem_ptr    ( mem_ptr_conv5      )
+//    );
 
-    /////////////////////////////////////////
-    //           SYNC MAXPOOL 3            //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //           SYNC MAXPOOL 3            //
+//    /////////////////////////////////////////
 
-    logic [DATA_WIDTH_CONV4-1 : 0]    read_maxpool3;
-    logic [DATA_WIDTH_CONV4-1 : 0]    write_maxpool3;
-    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] addr_maxpool3;    
-    logic                             ena_maxpool3;
-    logic                             wea_maxpool3;
-    logic [1:0]                       mem_ptr_maxpool3;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    read_maxpool3;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    write_maxpool3;
+//    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] addr_maxpool3;    
+//    logic                             ena_maxpool3;
+//    logic                             wea_maxpool3;
+//    logic [1:0]                       mem_ptr_maxpool3;
 
-    sync_maxpool #(
-        .IN_GRAPH_SIZE  ( 16 ),
-        .OUT_GRAPH_SIZE ( 4  ),
-        .INPUT_DIM      ( 32 )
-    ) u_maxpool_3 (
-       .clk          ( clk                  ),
-       .reset        ( reset                ),
-       .in_addr      ( out_addr_conv5       ),
-       .in_edges     ( out_edges_conv5      ),
-       .in_features  ( features_conv5       ),
-       .in_valid     ( out_valid_conv5      ),
-       .in_mem_ptr   ( mem_ptr_conv5        ),
-       .read         ( read_maxpool3        ),
-       .write        ( write_maxpool3       ),
-       .addr         ( addr_maxpool3        ),
-       .ena          ( ena_maxpool3         ),
-       .wea          ( wea_maxpool3         ),
-       .mem_ptr      ( mem_ptr_maxpool3     )
-    );
+//    sync_maxpool #(
+//        .IN_GRAPH_SIZE  ( 16 ),
+//        .OUT_GRAPH_SIZE ( 4  ),
+//        .INPUT_DIM      ( 32 )
+//    ) u_maxpool_3 (
+//       .clk          ( clk                  ),
+//       .reset        ( reset                ),
+//       .in_addr      ( out_addr_conv5       ),
+//       .in_edges     ( out_edges_conv5      ),
+//       .in_features  ( features_conv5       ),
+//       .in_valid     ( out_valid_conv5      ),
+//       .in_mem_ptr   ( mem_ptr_conv5        ),
+//       .read         ( read_maxpool3        ),
+//       .write        ( write_maxpool3       ),
+//       .addr         ( addr_maxpool3        ),
+//       .ena          ( ena_maxpool3         ),
+//       .wea          ( wea_maxpool3         ),
+//       .mem_ptr      ( mem_ptr_maxpool3     )
+//    );
 
-    /////////////////////////////////////////
-    //             FEATURE MEM 4           //
-    //          graph 4, feature 64        //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //             FEATURE MEM 4           //
+//    //          graph 4, feature 64        //
+//    /////////////////////////////////////////
 
-    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_a;
-    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_b;
-    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] out_read_addr;
-    logic                             out_clean;
-    logic                             out_switch;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_a;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_b;
+//    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] out_read_addr;
+//    logic                             out_clean;
+//    logic                             out_switch;
 
-    feature_memory #(
-        .FEATURE_DIM ( 32 ),
-        .GRAPH_SIZE  ( 4  )
-    ) u_maxpool3_mem (
-       .clk        ( clk                ),
-       .reset      ( reset              ),
-       .in_read    ( read_maxpool3      ),
-       .in_write   ( write_maxpool3     ),
-       .in_addr    ( addr_maxpool3      ),
-       .in_ena     ( ena_maxpool3       ),
-       .in_wea     ( wea_maxpool3       ),
-       .in_mem_ptr ( mem_ptr_maxpool3   ),
-       .out_read_a ( out_read_a         ),
-       .out_read_b (                    ),
-       .out_addr   ( out_read_addr      ),
-       .out_clean  ( out_clean          ),
-       .out_switch ( out_switch         )
-    );
+//    feature_memory #(
+//        .FEATURE_DIM ( 32 ),
+//        .GRAPH_SIZE  ( 4  )
+//    ) u_maxpool3_mem (
+//       .clk        ( clk                ),
+//       .reset      ( reset              ),
+//       .in_read    ( read_maxpool3      ),
+//       .in_write   ( write_maxpool3     ),
+//       .in_addr    ( addr_maxpool3      ),
+//       .in_ena     ( ena_maxpool3       ),
+//       .in_wea     ( wea_maxpool3       ),
+//       .in_mem_ptr ( mem_ptr_maxpool3   ),
+//       .out_read_a ( out_read_a         ),
+//       .out_read_b (                    ),
+//       .out_addr   ( out_read_addr      ),
+//       .out_clean  ( out_clean          ),
+//       .out_switch ( out_switch         )
+//    );
 
-    /////////////////////////////////////////
-    //          SERIALIZE OUTPUT           //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //          SERIALIZE OUTPUT           //
+//    /////////////////////////////////////////
 
-    out_serialize #(
-        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
-        .INPUT_DIM  ( 32                   )
-    ) u_out_serialize (
-       .clk       ( clk           ),
-       .reset     ( reset         ),
-       .in_data   ( out_read_a    ),
-       .in_addr   ( out_read_addr ),
-       .in_clean  ( out_clean     ),
-       .in_switch ( out_switch    ),
-       .out_addr  ( out_addr      ),
-       .out_data  ( out_data      ),
-       .out_valid ( out_valid     )
-    );
+//    out_serialize #(
+//        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
+//        .INPUT_DIM  ( 32                   )
+//    ) u_out_serialize (
+//       .clk       ( clk           ),
+//       .reset     ( reset         ),
+//       .in_data   ( out_read_a    ),
+//       .in_addr   ( out_read_addr ),
+//       .in_clean  ( out_clean     ),
+//       .in_switch ( out_switch    ),
+//       .out_addr  ( out_addr      ),
+//       .out_data  ( out_data      ),
+//       .out_valid ( out_valid     )
+//    );
 
 endmodule : top

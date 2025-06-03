@@ -5,7 +5,8 @@ module generate_graph #(
     parameter int MAX_Y_COORD    = 128,
     parameter int INPUT_BIT_TIME = 32,
     parameter int INPUT_BIT_X    = 8,
-    parameter int INPUT_BIT_Y    = 8
+    parameter int INPUT_BIT_Y    = 8,
+    parameter int COUNTER_WIDTH  = 9
 )( 
     input logic                       clk,
     input logic                       reset,
@@ -20,7 +21,7 @@ module generate_graph #(
 );
 
     graph_pkg::event_type event_normalized;
-    logic                 reset_context;
+    logic [COUNTER_WIDTH-1 : 0] window_counter;
 
 /////////////////////////////////////////////////////////////////
 //                          NORMALIZE                          //
@@ -34,7 +35,8 @@ module generate_graph #(
         .INPUT_BIT_TIME ( INPUT_BIT_TIME         ),
         .INPUT_BIT_X    ( INPUT_BIT_X            ),
         .INPUT_BIT_Y    ( INPUT_BIT_X            ),
-        .TIME_WINDOW    ( graph_pkg::TIME_WINDOW )
+        .TIME_WINDOW    ( graph_pkg::TIME_WINDOW ),
+        .COUNTER_WIDTH  ( COUNTER_WIDTH          )
     ) u_normalize       (
         .clk            ( clk              ),
         .reset          ( reset            ),
@@ -44,7 +46,7 @@ module generate_graph #(
         .polarity       ( polarity         ),
         .is_valid       ( is_valid         ),
         .out_event      ( event_normalized ),
-        .reset_context  ( reset_context    )
+        .window_counter ( window_counter   )
     );
 
 /////////////////////////////////////////////////////////////////
@@ -53,16 +55,17 @@ module generate_graph #(
 /////////////////////////////////////////////////////////////////
 
     edges_gen #(
-        .GRAPH_SIZE  ( graph_pkg::GRAPH_SIZE  ),
-        .RADIUS      ( graph_pkg::RADIUS      ),
-        .TIME_WINDOW ( graph_pkg::TIME_WINDOW )
+        .GRAPH_SIZE    ( graph_pkg::GRAPH_SIZE  ),
+        .RADIUS        ( graph_pkg::RADIUS      ),
+        .TIME_WINDOW   ( graph_pkg::TIME_WINDOW ),
+        .COUNTER_WIDTH ( COUNTER_WIDTH          )
     ) u_edges_gen (
-        .clk           ( clk              ),
-        .reset         ( reset            ),
-        .in_event      ( event_normalized ),
-        .out_event     ( pos_item         ),
-        .edges         ( edges            ),
-        .reset_context ( reset_context    )
+        .clk            ( clk              ),
+        .reset          ( reset            ),
+        .in_event       ( event_normalized ),
+        .out_event      ( pos_item         ),
+        .edges          ( edges            ),
+        .window_counter ( window_counter   )
     );
 
 endmodule : generate_graph

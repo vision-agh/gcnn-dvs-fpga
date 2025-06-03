@@ -5,8 +5,8 @@ module top_synth #(
 
     // Timestamp and coordinate values precision
     parameter INPUT_BIT_TIME = 32,
-    parameter INPUT_BIT_X    = 8,
-    parameter INPUT_BIT_Y    = 8
+    parameter INPUT_BIT_X    = 7,
+    parameter INPUT_BIT_Y    = 7
 )( 
     input                         clk,          // System clock (200MHz)
     input                         reset,        // System reset

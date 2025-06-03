@@ -3,14 +3,15 @@
 module edges_gen #(
     parameter int GRAPH_SIZE     = graph_pkg::GRAPH_SIZE,
     parameter int RADIUS         = graph_pkg::RADIUS,
+    parameter int COUNTER_WIDTH  = 9,
     parameter int TIME_WINDOW    = graph_pkg::TIME_WINDOW
 )( 
     input  logic                                             clk,
     input  logic                                             reset,
     input  graph_pkg::event_type                             in_event,
+    input  logic [COUNTER_WIDTH-1 : 0]                       window_counter,
     output graph_pkg::event_type                             out_event,
-    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges,
-    input  logic                                             reset_context
+    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges
 );
     localparam GRAPH_WIDTH    = $clog2(GRAPH_SIZE); // The GRAPH values width in bits
     localparam MEMORY_OPS_NUM = graph_pkg::MEMORY_OPS_NUM;
@@ -36,38 +37,22 @@ module edges_gen #(
     logic [$clog2(MEMORY_OPS_NUM)-1 : 0]      counter;
     logic [$clog2(GRAPH_SIZE*GRAPH_SIZE) : 0] counter_reset;
     logic [$clog2(MEMORY_OPS_NUM)-1 : 0]      counter_reg;
-    logic [3*GRAPH_WIDTH:0]                   fifo_in;
-    logic                                     prepare_reset;
-    logic                                     perform_reset;
-    logic [3*GRAPH_WIDTH:0]                   fifo_out;
+    logic [3*GRAPH_WIDTH+COUNTER_WIDTH:0]     fifo_in;
+    logic [3*GRAPH_WIDTH+COUNTER_WIDTH:0]     fifo_out;
     graph_pkg::event_type                     fifo_event;
+    logic [COUNTER_WIDTH-1 : 0]               fifo_window_counter;
+    
     
     always @(posedge clk) begin
         if (reset) begin
             fifo_write <= 0;
-            prepare_reset <= 1'b0;
             counter_reset <= '0;
-            perform_reset <= 1'b0;
         end
         else begin
             fifo_write <= 0;
-            fifo_in <= {in_event.t, in_event.x, in_event.y, in_event.p};
+            fifo_in <= {window_counter, in_event.t, in_event.x, in_event.y, in_event.p};
             if (in_event.valid) begin
                 fifo_write <= 1;
-            end
-            if (reset_context) begin
-                prepare_reset <= 1'b1;
-            end
-            if (prepare_reset && fifo_empty && out_event.valid) begin
-                prepare_reset <= 1'b0;
-                perform_reset <= 1'b1;
-            end
-            if (perform_reset) begin
-                counter_reset <= counter_reset+1;
-                if (counter_reset == (GRAPH_SIZE*GRAPH_SIZE)/2) begin
-                    perform_reset <= 1'b0;
-                    counter_reset <= '0;
-                end
             end
         end
     end
@@ -93,6 +78,7 @@ module edges_gen #(
     end
     // synthesis translate_on
 
+    assign fifo_window_counter = fifo_out[3*GRAPH_WIDTH+COUNTER_WIDTH : 3*GRAPH_WIDTH+1];
     assign fifo_event.t = fifo_out[3*GRAPH_WIDTH : (2*GRAPH_WIDTH)+1];
     assign fifo_event.x = fifo_out[2*GRAPH_WIDTH : GRAPH_WIDTH+1];
     assign fifo_event.y = fifo_out[GRAPH_WIDTH   : 1 ];
@@ -104,7 +90,7 @@ module edges_gen #(
     ////////////////////////////////////////////////////////////
 
     localparam ADDR_WIDTH = $clog2(GRAPH_SIZE*GRAPH_SIZE);
-    localparam DATA_WIDTH = GRAPH_WIDTH+2; //Timestapm, polarity and is_empy
+    localparam DATA_WIDTH = GRAPH_WIDTH+2+COUNTER_WIDTH; //Timestapm, polarity and is_empty
 
     logic [ADDR_WIDTH-1:0] addra;
     logic [ADDR_WIDTH-1:0] addrb;
@@ -141,7 +127,6 @@ module edges_gen #(
     logic wr_a;
     logic rd_a_reg;
     logic rd_b_reg;
-    logic drop;
     logic condition_a;
     logic condition_b;
     logic [GRAPH_WIDTH-1:0] x_coord_a;
@@ -151,11 +136,10 @@ module edges_gen #(
     assign rd_a = ena & !wea;
     assign wr_a = ena & wea;
 
-    assign ena = perform_reset ? 1'b1 : ((counter <= MEMORY_OPS_NUM-1 & condition_a) ? 1 : 0);
-    assign enb = perform_reset ? 1'b1 : ((counter <= MEMORY_OPS_NUM-1 & condition_b) ? 1 : 0);
-    //assign wea = perform_reset ? 1'b1 : ((counter == MEMORY_OPS_NUM-1 && !drop) ? 1 : 0);
-    assign wea = perform_reset ? 1'b1 : ((counter == MEMORY_OPS_NUM-1) ? 1 : 0);
-    assign web = perform_reset;
+    assign ena = (counter <= MEMORY_OPS_NUM-1 & condition_a) ? 1 : 0;
+    assign enb = (counter <= MEMORY_OPS_NUM-1 & condition_b) ? 1 : 0;
+    assign wea = (counter == MEMORY_OPS_NUM-1) ? 1 : 0;
+    assign web = 0;
 
     assign x_coord_a = (MEM_SIGN_A_X[counter] > 0) ? (fifo_event.x - MEM_ADDR_A_X[counter]) : (fifo_event.x + MEM_ADDR_A_X[counter]);
     assign x_coord_b = (MEM_SIGN_B_X[counter] > 0) ? (fifo_event.x - MEM_ADDR_B_X[counter]) : (fifo_event.x + MEM_ADDR_B_X[counter]);
@@ -166,9 +150,32 @@ module edges_gen #(
                          (GRAPH_SIZE > x_coord_b + fifo_event.x >= 0);
 
     // ADDR = Y*GRAPH SIZE + X
-    assign addra = perform_reset ? counter_reset : ((fifo_event.y - MEM_ADDR_A_Y[counter]) * GRAPH_SIZE + x_coord_a);
-    assign addrb = perform_reset ? ((GRAPH_SIZE*GRAPH_SIZE-1)-counter_reset) : ((fifo_event.y + MEM_ADDR_B_Y[counter]) * GRAPH_SIZE + x_coord_b);
-    assign dina  = perform_reset ? '0 : {fifo_event.t, fifo_event.p, 1'b1};
+    assign addra = (fifo_event.y - MEM_ADDR_A_Y[counter]) * GRAPH_SIZE + x_coord_a;
+    assign addrb = (fifo_event.y + MEM_ADDR_B_Y[counter]) * GRAPH_SIZE + x_coord_b;
+    assign dina  = {fifo_window_counter, fifo_event.t, fifo_event.p, 1'b1};
+
+
+    logic [$clog2(RADIUS) : 0] diff_t_a;
+    logic                      condition_a_1, condition_a_2, connect_a;
+    assign diff_t_a = fifo_event.t >= douta[GRAPH_WIDTH+1:2] ? fifo_event.t-douta[GRAPH_WIDTH+1:2] : (fifo_event.t+128)-douta[GRAPH_WIDTH+1:2];
+    assign condition_a_1 = ((fifo_event.t-douta[GRAPH_WIDTH+1:2]) < RADIUS) && 
+                           fifo_window_counter == douta[DATA_WIDTH-1:GRAPH_WIDTH+2] && 
+                           (fifo_event.t >= douta[GRAPH_WIDTH+1:2]);
+    assign condition_a_2 = fifo_event.t < RADIUS && 
+                           (douta[GRAPH_WIDTH+1:2] - fifo_event.t) >= (GRAPH_SIZE-RADIUS) &&
+                           fifo_window_counter == douta[DATA_WIDTH-1:GRAPH_WIDTH+2]+1;
+    assign connect_a = condition_a_1 || condition_a_2;
+
+    logic [$clog2(RADIUS) : 0] diff_t_b;
+    logic                      condition_b_1, condition_b_2, connect_b;
+    assign diff_t_b = fifo_event.t >= doutb[GRAPH_WIDTH+1:2] ? fifo_event.t-doutb[GRAPH_WIDTH+1:2] : (fifo_event.t+128)-doutb[GRAPH_WIDTH+1:2];
+    assign condition_b_1 = ((fifo_event.t-doutb[GRAPH_WIDTH+1:2]) < RADIUS) && 
+                           fifo_window_counter == doutb[DATA_WIDTH-1:GRAPH_WIDTH+2] && 
+                           (fifo_event.t >= doutb[GRAPH_WIDTH+1:2]);
+    assign condition_b_2 = fifo_event.t < RADIUS && 
+                           (doutb[GRAPH_WIDTH+1:2] - fifo_event.t) >= (GRAPH_SIZE-RADIUS) &&
+                           fifo_window_counter == doutb[DATA_WIDTH-1:GRAPH_WIDTH+2]+1;
+    assign connect_b = condition_b_1 || condition_b_2;
 
     always @(posedge clk) begin
         if (reset) begin
@@ -176,7 +183,6 @@ module edges_gen #(
             rd_b_reg <= 0;
             counter_reg <= 0;
             counter <= MEMORY_OPS_NUM-1;
-            drop <= 0;
         end
         else begin
             rd_a_reg <= rd_a;
@@ -191,23 +197,15 @@ module edges_gen #(
         
             // Port A (14 reads and write)
             if (counter_reg != MEMORY_OPS_NUM-1) begin
-                edges_reg[counter_reg].t <= (rd_a_reg & douta[0]) ? fifo_event.t-douta[DATA_WIDTH-1:2] : '0;
+                edges_reg[counter_reg].t <= (rd_a_reg & douta[0]) ? diff_t_a : '0;
                 edges_reg[counter_reg].attribute <= (rd_a_reg & douta[0]) ? douta[1] : '0;
-                edges_reg[counter_reg].is_connected <= (rd_a_reg & douta[0]) & ((fifo_event.t-douta[DATA_WIDTH-1:2]) < RADIUS) & (fifo_event.t >= douta[DATA_WIDTH-1:2]);
+                edges_reg[counter_reg].is_connected <= (rd_a_reg & douta[0]) & connect_a;
             end
 
             // Port B (15 reads)
-            edges_reg[MEMORY_OPS_NUM-1+counter_reg].t <= (rd_b_reg & doutb[0]) ? fifo_event.t-doutb[DATA_WIDTH-1:2] : '0;
+            edges_reg[MEMORY_OPS_NUM-1+counter_reg].t <= (rd_b_reg & doutb[0]) ? diff_t_b : '0;
             edges_reg[MEMORY_OPS_NUM-1+counter_reg].attribute <= (rd_b_reg & doutb[0]) ? doutb[1] : '0;
-            edges_reg[MEMORY_OPS_NUM-1+counter_reg].is_connected <= (rd_b_reg & doutb[0]) & ((fifo_event.t-doutb[DATA_WIDTH-1:2]) <= RADIUS) & (fifo_event.t >= doutb[DATA_WIDTH-1:2]);
-
-            // Drop duplicate events
-            //drop <= 0;
-            //if (counter_reg == 0 && (doutb[DATA_WIDTH-1:2] == fifo_event.t) && doutb[0]) begin
-            //    drop <= 1;
-            //    counter <= MEMORY_OPS_NUM-1;
-            //end
-
+            edges_reg[MEMORY_OPS_NUM-1+counter_reg].is_connected <= (rd_b_reg & doutb[0]) & connect_b;
         end
     end
     
@@ -229,8 +227,8 @@ module edges_gen #(
         .odata ( valid_d1  )
     );
 
-    //assign valid_d2 = valid_d1 & !drop;
     assign valid_d2 = valid_d1;
+    //assign valid_d2 = valid_d1;
     
     delay_module #(
         .N        ( 1  ),

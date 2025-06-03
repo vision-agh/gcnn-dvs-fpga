@@ -3,7 +3,7 @@
 module async_conv #(
     parameter int GRAPH_SIZE        = graph_pkg::GRAPH_SIZE,
     parameter int PRECISION	        = graph_pkg::PRECISION,
-    parameter int INPUT_DIM         = 4,
+    parameter int INPUT_DIM         = 3,
     parameter int OUTPUT_DIM        = 16,
     parameter int MULTIPLIER_OUT    = 28877700,
     parameter int ZERO_POINT        = 126,
@@ -87,10 +87,9 @@ module async_conv #(
     
     // Port A
     always @(posedge clk) begin
-        feature_mat_a[0] <= (counter==MEMORY_OPS_NUM-1) ? (temp_event.p * POS_1) : (temp_edges[counter].attribute * POS_1);
+        feature_mat_a[0] <= (counter==MEMORY_OPS_NUM-1) ? (temp_event.p ? POS_1 : -POS_1) : (temp_edges[counter].attribute ? POS_1 : -POS_1);
         feature_mat_a[1] <= FEATURES_A_X[counter];
         feature_mat_a[2] <= FEATURES_A_Y[counter];
-        feature_mat_a[3] <= (counter==MEMORY_OPS_NUM-1) ? 0 : (temp_edges[counter].t == 1 ? NEG_1 : (temp_edges[counter].t == 2 ? NEG_2 : (temp_edges[counter].t == 3 ? NEG_3 : 0)));
     end
 
     matrix_multiplication #(
@@ -109,10 +108,9 @@ module async_conv #(
 
     // PORT B
     always @(posedge clk) begin
-       feature_mat_b[0] <= temp_edges[MEMORY_OPS_NUM-1+counter].attribute * POS_1;
+       feature_mat_b[0] <= temp_edges[MEMORY_OPS_NUM-1+counter].attribute ? POS_1 : -POS_1;
        feature_mat_b[1] <= FEATURES_B_X[counter];
        feature_mat_b[2] <= FEATURES_B_Y[counter]; 
-       feature_mat_b[3] <= (temp_edges[MEMORY_OPS_NUM-1+counter].t == 1 ? NEG_1 : (temp_edges[MEMORY_OPS_NUM-1+counter].t == 2 ? NEG_2 : (temp_edges[MEMORY_OPS_NUM-1+counter].t == 3 ? NEG_3 : 0)));
     end
 
     matrix_multiplication #(
