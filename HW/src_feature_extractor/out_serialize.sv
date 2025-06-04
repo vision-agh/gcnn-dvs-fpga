@@ -1,26 +1,28 @@
 `timescale 1ns / 1ps
 
 module out_serialize #(
-    parameter int GRAPH_SIZE     = 4,
-    parameter int PRECISION      = graph_pkg::PRECISION,
-    parameter int INPUT_DIM      = 64,
-    parameter int ADDR_WIDTH     = $clog2(GRAPH_SIZE*GRAPH_SIZE*GRAPH_SIZE),
-    parameter int IN_DATA_WIDTH  = (INPUT_DIM*PRECISION) + (9*2),
-    parameter int ZERO_POINT     = 1
+    parameter int GRAPH_SIZE      = 4,
+    parameter int PRECISION       = graph_pkg::PRECISION,
+    parameter int INPUT_DIM       = 64,
+    parameter int ADDR_WIDTH   = $clog2(GRAPH_SIZE*GRAPH_SIZE*GRAPH_SIZE),
+    parameter int OUT_ADDR_WIDTH  = 12,
+    parameter int IN_DATA_WIDTH   = (INPUT_DIM*PRECISION) + (9*2),
+    parameter int ZERO_POINT      = 1
 
 )( 
     input logic                        clk,
     input logic                        reset,
 
-    input logic  [IN_DATA_WIDTH-1 : 0] in_data,
-    output logic [ADDR_WIDTH-1 : 0]    in_addr,
+    input logic  [IN_DATA_WIDTH-1 : 0]     in_data,
+    output logic [(ADDR_WIDTH*3)-1 : 0]    in_addr,
 
-    output logic                       in_clean,
-    input  logic                       in_switch,
+    output logic                           in_clean,
+    input  logic                           in_switch,
 
-    output logic [ADDR_WIDTH-1 : 0]    out_addr,
-    output logic [PRECISION-1 : 0]     out_data,
-    output logic                       out_valid
+    output logic [OUT_ADDR_WIDTH-1 : 0]    out_addr,
+    output logic [PRECISION-1 : 0]         out_data,
+    output logic                           out_valid,
+    output logic [$clog2(GRAPH_SIZE)-1 :0] node_t
 );
 
     localparam ITER_CNT_WIDTH = $clog2(INPUT_DIM);
@@ -39,7 +41,7 @@ module out_serialize #(
     logic [ITER_CNT_WIDTH-1 : 0] iter_counter; //Count to INPUT_DIM
     logic [ITER_CNT_WIDTH-1 : 0] iter_counter_h1; //Count to INPUT_DIM
     logic [ITER_CNT_WIDTH-1 : 0] iter_counter_out; //Count to INPUT_DIM
-    logic [$clog2(GRAPH_SIZE)-1 :0] node_t;
+    
 
     always @(posedge clk) begin
         if (reset) begin
@@ -93,7 +95,7 @@ module out_serialize #(
     logic reg_valid;
     logic condition_y;
 
-    assign in_addr = (state == CONV) ? conv_counter : zero_counter;
+    assign in_addr = conv_counter + node_t*(GRAPH_SIZE*GRAPH_SIZE);
     assign in_clean = (state == ZERO);
 
     logic [PRECISION-1:0]   feature_data [INPUT_DIM-1:0];
@@ -107,15 +109,18 @@ module out_serialize #(
         end
     endgenerate
 
+    logic [PRECISION-1 : 0] is_valid;
+    assign is_valid = (state == ZERO) ? 1 : 0;
+
     always @(posedge clk) begin
-        // Y* GRAPH + X
+        // Y* GRAPH + X + 512*t
         node_x <= (conv_counter_h1 % GRAPH_SIZE);
         node_y <= (conv_counter_h1 - (conv_counter_h1 % GRAPH_SIZE)) / GRAPH_SIZE;
 
-        out_data <= feature_data[iter_counter_out];
-        out_addr <= (16 * node_x) + (4 * node_y) + node_t;
+        out_data <= (state == CONV) ? feature_data[iter_counter_out] : is_valid;
+        out_addr <= (state == CONV) ? (128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512 : 128;
         reg_valid <= (state == CONV) && !(iter_counter == 0 && conv_counter==0);
-        out_valid <= reg_valid;
+        out_valid <= reg_valid || in_switch || (state == ZERO);
     end
 
 endmodule

@@ -1,0 +1,335 @@
+`timescale 1ns / 1ps
+
+module sync_conv_simple #(
+    parameter int GRAPH_SIZE     = 32,
+    parameter int PRECISION      = graph_pkg::PRECISION,
+    parameter int INPUT_DIM      = 16,
+    parameter int OUTPUT_DIM     = 32,
+    parameter int ADDR_WIDTH     = $clog2(GRAPH_SIZE*GRAPH_SIZE),
+    parameter int IN_ADDR_WIDTH = $clog2(GRAPH_SIZE*GRAPH_SIZE*3)+1,
+    parameter int IN_DATA_WIDTH  = (INPUT_DIM*PRECISION) + (9*2), //edges
+    parameter int OUT_DATA_WIDTH = (OUTPUT_DIM*PRECISION) + (9*2), //edges
+    parameter int ZERO_POINT_IN = 126,
+    parameter int ZERO_POINT_OUT = 120,
+    parameter int MULTIPLIER_OUT = 21665426,
+    parameter int ZERO_POINT_WEIGHT = 0,
+    parameter string INIT_PATH      = "???",
+    parameter int SCALE_IN       = 31
+
+)( 
+    input logic                     clk,
+    input logic                     reset,
+
+    input logic  [IN_DATA_WIDTH-1 : 0]  in_data,
+    output logic [IN_ADDR_WIDTH-1 : 0]  in_addr,
+
+    output logic                        in_clean,
+    input  logic                        in_switch,
+    output logic [1:0]				    ptr_in,
+    output logic                        ena_in,
+
+    output logic [ADDR_WIDTH-1 : 0]     out_addr,
+    output logic [17:0]                 out_edges,
+    output logic [PRECISION-1 :0]       features [OUTPUT_DIM-1 : 0],
+    output logic                        out_valid,
+    output logic [1:0]                  mem_ptr
+);
+
+    localparam CONV_IN_DIM = INPUT_DIM+2;
+    localparam ITER_CNT_WIDTH = $clog2(OUTPUT_DIM);
+    localparam IDLE = 2'd0;
+    localparam CONV = 2'd1;
+    localparam ZERO = 2'd2;
+    logic [1:0] state = IDLE;
+    logic [1:0] state_h1 = IDLE;
+    logic [1:0] state_read = IDLE;
+    logic update_address_mul_in;
+
+    localparam logic MEM_ADDR_X [17:0] = {1,  1,  0, 1, 1, 0, 1, 1, 0,
+    									  1,  1,  0, 1, 1, 0, 1, 1, 0};
+    localparam logic signed [PRECISION:0] FEATURES_X [17:0] = {-SCALE_IN, SCALE_IN, 0, -SCALE_IN, SCALE_IN,  0, -SCALE_IN, SCALE_IN, -0,
+    												           -SCALE_IN, SCALE_IN, 0, -SCALE_IN, SCALE_IN,  0, -SCALE_IN, SCALE_IN, -0};
+    localparam logic MEM_SIGN_X [17:0] = {1,  0,  0, 1, 0, 0, 1, 0, 0, 
+    								      1,  0,  0, 1, 0, 0, 1, 0, 0};
+
+    localparam logic MEM_ADDR_Y [17:0] = {1, 1, 1, 1, 1, 1, 0, 0, 0, 
+    								      1, 1, 1, 1, 1, 1, 0, 0, 0};
+    localparam logic signed [PRECISION:0] FEATURES_Y [17:0] = {-SCALE_IN, -SCALE_IN, -SCALE_IN, SCALE_IN, SCALE_IN,  SCALE_IN, 0, 0, 0,
+    														   -SCALE_IN, -SCALE_IN, -SCALE_IN, SCALE_IN, SCALE_IN,  SCALE_IN, 0, 0, 0};
+    localparam logic MEM_SIGN_Y [17:0] = {1, 1, 1, 0, 0, 0, 0, 0, 0,
+    									  1, 1, 1, 0, 0, 0, 0, 0, 0};
+
+    logic [ADDR_WIDTH-1 : 0] zero_counter; //Count to (GRAPH_SIZE*GRAPH_SIZE)
+    logic [ADDR_WIDTH-1 : 0] conv_counter; //Count to (GRAPH_SIZE*GRAPH_SIZE)
+    logic [ADDR_WIDTH-1 : 0] conv_counter_h1;   //Count to (GRAPH_SIZE*GRAPH_SIZE)
+    logic [ADDR_WIDTH-1 : 0] conv_counter_read; //Count to (GRAPH_SIZE*GRAPH_SIZE)
+    logic [5 : 0]            edge_counter; //Count to 18
+    logic [5 : 0]            edge_counter_h1; //Count to 18
+    logic [5 : 0]            edge_counter_read; //Count to 18
+    logic [5 : 0]            edge_counter_mul_in; //Count to 18
+    logic [5 : 0]            edge_counter_mul_h1; //Count to 18
+    logic [5 : 0]            edge_counter_mul_h2; //Count to 18
+    logic [5 : 0]            edge_counter_mul_out; //Count to 18
+    logic [5 : 0]            edge_counter_accumulate; //Count to 18
+    
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_h1; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_read; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_in; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_h1; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_h2; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_out; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_accumulate; //Count to OUTPUT_DIM
+
+    assign ena_in = (state == CONV) || in_switch;
+
+    always @(posedge clk) begin
+        if (reset) begin
+            state <= IDLE;
+            zero_counter <= '0;
+            conv_counter <= '0;
+            edge_counter <= '0;
+            iter_counter <= '0;
+            ptr_in <= '0;
+        end
+        else begin
+            // Perform Convolution after in_switch
+            if (state == CONV) begin
+                if (iter_counter == OUTPUT_DIM-1) begin
+                    iter_counter <= '0;
+                    edge_counter <= edge_counter + 1;
+                end
+                if (edge_counter == 17 && iter_counter == OUTPUT_DIM-1) begin
+                    edge_counter <= '0;
+                    conv_counter <= conv_counter + 1;
+                end
+                iter_counter <= iter_counter + 1;
+            end
+            if (in_switch) begin
+                state <= CONV;
+                conv_counter <= '0;
+                iter_counter <= '0;
+                edge_counter <= '0;
+            end
+            // Reset oldest memory channel after
+            if (conv_counter == (GRAPH_SIZE*GRAPH_SIZE)-1 && edge_counter == 17 && iter_counter == OUTPUT_DIM-1) begin
+                state <= ZERO;
+                zero_counter <= '0;
+            end
+            // Wait for next channel after reseting
+            if (state == ZERO && zero_counter == ((GRAPH_SIZE*GRAPH_SIZE)-1)) begin
+                state <= IDLE;
+                ptr_in <= (ptr_in == 2) ? 0 : ptr_in+1;
+            end
+            else begin
+                if (state == ZERO) zero_counter <= zero_counter+1;
+            end
+            state_read <= state_h1;
+            state_h1 <= state;
+            conv_counter_h1 <= conv_counter;
+            conv_counter_read <= conv_counter_h1;
+
+            iter_counter_h1 <= iter_counter;
+            iter_counter_read <= iter_counter_h1;
+            iter_counter_mul_in <= iter_counter_read;
+            iter_counter_mul_h1 <= iter_counter_mul_in;
+            iter_counter_mul_h2 <= iter_counter_mul_h1;
+            iter_counter_mul_out <= iter_counter_mul_h2;
+            iter_counter_accumulate <= iter_counter_mul_out;
+
+            edge_counter_h1 <= edge_counter;
+            edge_counter_read <= edge_counter_h1;
+            edge_counter_mul_in <= edge_counter_read;
+            edge_counter_mul_h1 <= edge_counter_mul_in;
+            edge_counter_mul_h2 <= edge_counter_mul_h1;
+            edge_counter_mul_out <= edge_counter_mul_h2;
+            edge_counter_accumulate <= edge_counter_mul_out;
+        end
+    end
+
+    logic [$clog2(GRAPH_SIZE) -1 :0] node_x;
+    logic [$clog2(GRAPH_SIZE) -1 :0] node_y;
+    logic [$clog2(GRAPH_SIZE) -1 :0] addr_x;
+    logic [$clog2(GRAPH_SIZE) -1 :0] addr_y;
+    logic condition_x;
+    logic condition_y;
+
+    // Y* GRAPH + X
+    assign node_x = (conv_counter % GRAPH_SIZE);
+    assign node_y = (conv_counter - (conv_counter % GRAPH_SIZE)) / GRAPH_SIZE;
+
+    always @(posedge clk) begin
+        addr_x <= MEM_SIGN_X[edge_counter] ? node_x - 1 : node_x + MEM_ADDR_X[edge_counter];
+        addr_y <= MEM_SIGN_Y[edge_counter] ? node_y - 1 : node_y + MEM_ADDR_Y[edge_counter];
+        condition_x <= MEM_SIGN_X[edge_counter] ? (node_x > 1)
+                                               : ((node_x + MEM_ADDR_X[edge_counter]) < GRAPH_SIZE);
+        condition_y <= MEM_SIGN_Y[edge_counter] ? (node_y > 1)
+                                               : ((node_y + MEM_ADDR_X[edge_counter]) < GRAPH_SIZE);
+
+    end
+    logic [IN_ADDR_WIDTH-1 : 0] base_addr;
+    logic [1:0]				    ptr_edge;
+    logic [IN_ADDR_WIDTH-1 : 0] edge_addr;
+
+    assign ptr_edge = ptr_in == 0 ? 2 : (ptr_in == 1) ? 0 : 1;
+    assign base_addr = ptr_in*(GRAPH_SIZE*GRAPH_SIZE);
+    assign edge_addr = ptr_edge*(GRAPH_SIZE*GRAPH_SIZE);
+    assign in_addr = edge_counter_h1 < 9 ? ((addr_y * GRAPH_SIZE) + addr_x) + base_addr
+                                         : ((addr_y * GRAPH_SIZE) + addr_x) + edge_addr;
+    assign in_clean = (state == ZERO);
+
+    logic [17:0] edges;
+    logic signed [PRECISION:0]   feature_data [INPUT_DIM-1:0];
+    logic signed [PRECISION:0]   feature_mat [CONV_IN_DIM-1:0];
+    logic        [PRECISION-1:0] output_mat;
+    logic        [PRECISION-1:0] output_mat_full   [OUTPUT_DIM-1:0];
+    logic        [PRECISION-1:0] out_features      [OUTPUT_DIM-1:0];
+
+    logic [5:0] index;
+    logic [5:0] index_reg;
+    logic signed [1:0] diff_x;
+    logic signed [1:0] diff_y;    
+
+    assign diff_x = (MEM_SIGN_X[edge_counter_read]) ? -1 : MEM_ADDR_X[edge_counter_read];
+    assign diff_y = (MEM_SIGN_Y[edge_counter_read]) ? -1 : MEM_ADDR_Y[edge_counter_read];
+
+    // PORT A -  Self-loop on 1st iteration
+    genvar a;
+    generate
+        for (a = 0; a < INPUT_DIM; a++) begin : port_a_assign
+            always @(posedge clk) begin
+                feature_data[a][PRECISION-1 : 0] = {in_data[((PRECISION)*(a+1))-1+(9*2) : (PRECISION*a)+(9*2)]};
+                feature_data[a][PRECISION] = 0;
+                feature_mat[a] <= feature_data[a]-ZERO_POINT_IN;
+            end
+        end
+    endgenerate
+
+    logic signed [PRECISION:0] single_weight_reg [INPUT_DIM+1:0];
+    logic signed [31:0]        single_bias_reg;
+    logic signed [PRECISION:0] single_weight [INPUT_DIM+1:0];
+    logic signed [31:0]        single_bias;
+
+    localparam WEIGHT_WIDTH = ((INPUT_DIM+2)*(PRECISION))+32; //bias
+    logic [WEIGHT_WIDTH-1 : 0] weight_mem;
+
+    memory_weights #(
+        .AWIDTH   ( ITER_CNT_WIDTH ),
+        .DWIDTH   ( WEIGHT_WIDTH   ),
+        .RAM_TYPE ( "block"        ),
+        .INIT_PATH ( INIT_PATH     )
+    ) weights_memory   (
+        .clk      ( clk      ),
+        .read     ( state == CONV   ),
+        .addr     ( iter_counter    ),
+        .dout     ( weight_mem      )
+    );
+
+    always @(posedge clk) begin
+        feature_mat[INPUT_DIM]   <= FEATURES_X[edge_counter_read];
+        feature_mat[INPUT_DIM+1] <= FEATURES_Y[edge_counter_read];
+    end
+
+    genvar w;
+    generate
+        for (w = 0; w < INPUT_DIM+2; w++) begin : weights_assign
+            always @(posedge clk) begin
+                single_weight_reg[w] <= weight_mem[(((PRECISION)*(w+1))-1)+32 : ((PRECISION)*w)+32] - ZERO_POINT_WEIGHT;
+            end
+        end
+    endgenerate
+
+    always @(posedge clk) begin
+        single_bias_reg <= weight_mem[31:0];
+        single_weight <= single_weight_reg;
+        single_bias <= single_bias_reg;
+    end
+
+    vector_multiplication #(
+        .INPUT_DIM         ( INPUT_DIM+2    ),
+        .MULTIPLIER        ( MULTIPLIER_OUT ),
+        .ZERO_POINT        ( ZERO_POINT_OUT )
+    ) mul_a (
+        .clk             ( clk           ),
+        .reset           ( reset         ),
+        .feature_matrix  ( feature_mat   ),
+        .weight_matrix   ( single_weight ),
+        .bias            ( single_bias   ),
+        .output_matrix   ( output_mat    )
+    );
+
+    logic is_connected;
+    logic is_connected_reg;
+    logic is_connected_h1;
+    logic data_ready;
+    logic write_ready;
+    assign update_address_mul_in = edge_counter_mul_in >= 9;
+
+    always @(posedge clk) begin
+        if (state_read == CONV) begin
+            if (edge_counter_read == 0) begin
+                edges <= in_data[17:0];
+            end
+            index <= ((diff_y+1)*3)+(diff_x+1);
+            index_reg <= index+(update_address_mul_in*9);
+            is_connected <= edges[index+(update_address_mul_in*9)];
+            is_connected_h1 <= is_connected;
+            is_connected_reg <= is_connected_h1;
+            data_ready <= (edge_counter_accumulate == 17 && iter_counter_accumulate == OUTPUT_DIM-1);
+            out_valid <= data_ready;
+        end
+    end
+
+    // Handle outputs of multiplayers
+    always @(posedge clk) begin
+        output_mat_full[iter_counter_mul_out] <= is_connected_reg ? output_mat : '0;
+    end
+
+    always @(posedge clk) begin
+       if (iter_counter_accumulate == 0 && edge_counter_accumulate == 0) begin
+            out_features <= '{default:ZERO_POINT_OUT};;
+            out_features[iter_counter_accumulate] <= ZERO_POINT_OUT >= output_mat_full[iter_counter_accumulate] ? ZERO_POINT_OUT : output_mat_full[iter_counter_accumulate];
+        end
+        else begin
+            out_features[iter_counter_accumulate] <= out_features[iter_counter_accumulate] > output_mat_full[iter_counter_accumulate] ? out_features[iter_counter_accumulate] : output_mat_full[iter_counter_accumulate];
+        end
+        features <= out_features;
+    end
+
+    delay_module #(
+        .N        ( 18 ),
+        .DELAY    ( 7  )
+    ) delay_edge (
+        .clk   ( clk       ),
+        .idata ( edges     ),
+        .odata ( out_edges )
+    );
+
+    delay_module #(
+        .N        ( ADDR_WIDTH ),
+        .DELAY    ( 9          )
+    ) delay_addr (
+        .clk   ( clk      ),
+        .idata ( ((node_y * GRAPH_SIZE) + node_x) ),
+        .odata ( out_addr                         )
+    );
+
+    delay_module #(
+        .N        ( 2  ),
+        .DELAY    ( 9  )
+    ) delay_ptr (
+        .clk   ( clk     ),
+        .idata ( ptr_in  ),
+        .odata ( mem_ptr )
+    );
+
+    // synthesis translate_off
+    always @(posedge clk) begin
+        if (state != IDLE && in_switch) begin
+            $display("CONVOLUTION THROUGHPUT IS TOO SMALL - EXIT THE SIMULATION");
+            $stop;
+        end
+    end
+    // synthesis translate_on
+
+endmodule
