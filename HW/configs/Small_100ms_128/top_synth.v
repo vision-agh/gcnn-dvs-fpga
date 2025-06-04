@@ -16,7 +16,7 @@ module top_synth #(
     input                         polarity,     // Input events polarity
     input                         is_valid,     // The is_valid flag for input events
 
-    output [5 : 0]  out_addr,     // Output feature map element address
+    output [11 : 0] out_addr,     // Output feature map element address
     output [7 : 0]  out_data,     // Output feature map element data
     output          out_valid     // The is_valid flag for output feature map
 );

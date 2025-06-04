@@ -4,7 +4,7 @@ module out_serialize #(
     parameter int GRAPH_SIZE      = 4,
     parameter int PRECISION       = graph_pkg::PRECISION,
     parameter int INPUT_DIM       = 64,
-    parameter int ADDR_WIDTH   = $clog2(GRAPH_SIZE*GRAPH_SIZE*GRAPH_SIZE),
+    parameter int ADDR_WIDTH      = $clog2(GRAPH_SIZE*GRAPH_SIZE*3)+1,
     parameter int OUT_ADDR_WIDTH  = 12,
     parameter int IN_DATA_WIDTH   = (INPUT_DIM*PRECISION) + (9*2),
     parameter int ZERO_POINT      = 1
@@ -14,15 +14,16 @@ module out_serialize #(
     input logic                        reset,
 
     input logic  [IN_DATA_WIDTH-1 : 0]     in_data,
-    output logic [(ADDR_WIDTH*3)-1 : 0]    in_addr,
+    output logic [ADDR_WIDTH-1 : 0]        in_addr,
+    output logic [1:0]                     mem_ptr,
+    output logic                           in_valid,
 
     output logic                           in_clean,
     input  logic                           in_switch,
 
     output logic [OUT_ADDR_WIDTH-1 : 0]    out_addr,
     output logic [PRECISION-1 : 0]         out_data,
-    output logic                           out_valid,
-    output logic [$clog2(GRAPH_SIZE)-1 :0] node_t
+    output logic                           out_valid
 );
 
     localparam ITER_CNT_WIDTH = $clog2(INPUT_DIM);
@@ -41,7 +42,11 @@ module out_serialize #(
     logic [ITER_CNT_WIDTH-1 : 0] iter_counter; //Count to INPUT_DIM
     logic [ITER_CNT_WIDTH-1 : 0] iter_counter_h1; //Count to INPUT_DIM
     logic [ITER_CNT_WIDTH-1 : 0] iter_counter_out; //Count to INPUT_DIM
-    
+
+    logic [$clog2(GRAPH_SIZE)-1 :0] node_t;
+
+    assign mem_ptr = node_t;
+    assign in_valid = state == CONV;
 
     always @(posedge clk) begin
         if (reset) begin
@@ -91,9 +96,7 @@ module out_serialize #(
 
     logic [$clog2(GRAPH_SIZE) -1 :0] node_x;
     logic [$clog2(GRAPH_SIZE) -1 :0] node_y;
-    logic condition_x;
     logic reg_valid;
-    logic condition_y;
 
     assign in_addr = conv_counter + node_t*(GRAPH_SIZE*GRAPH_SIZE);
     assign in_clean = (state == ZERO);
@@ -117,10 +120,10 @@ module out_serialize #(
         node_x <= (conv_counter_h1 % GRAPH_SIZE);
         node_y <= (conv_counter_h1 - (conv_counter_h1 % GRAPH_SIZE)) / GRAPH_SIZE;
 
-        out_data <= (state == CONV) ? feature_data[iter_counter_out] : is_valid;
-        out_addr <= (state == CONV) ? (128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512 : 128;
-        reg_valid <= (state == CONV) && !(iter_counter == 0 && conv_counter==0);
-        out_valid <= reg_valid || in_switch || (state == ZERO);
+        out_data <= (state_h1 == CONV) ? feature_data[iter_counter_out] : is_valid;
+        out_addr <= (state_h1 == CONV) ? ((128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512): 128;
+        reg_valid <= (state_h1 == CONV) && !(iter_counter == 0 && conv_counter==0);
+        out_valid <= reg_valid || in_switch || (state_h1 == ZERO);
     end
 
 endmodule
