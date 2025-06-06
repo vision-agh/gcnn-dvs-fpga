@@ -45,7 +45,6 @@ module out_serialize #(
 
     logic [$clog2(GRAPH_SIZE)-1 :0] node_t;
 
-    assign mem_ptr = node_t;
     assign in_valid = state == CONV;
 
     always @(posedge clk) begin
@@ -81,6 +80,7 @@ module out_serialize #(
             // Wait for next channel after reseting
             if (state == ZERO && zero_counter == ((GRAPH_SIZE*GRAPH_SIZE)-1)) begin
                 state <= IDLE;
+                mem_ptr <= (mem_ptr == 2) ? 0 : mem_ptr+1;
             end
             else begin
                 if (state == ZERO) zero_counter <= zero_counter+1;
@@ -98,7 +98,7 @@ module out_serialize #(
     logic [$clog2(GRAPH_SIZE) -1 :0] node_y;
     logic reg_valid;
 
-    assign in_addr = conv_counter + node_t*(GRAPH_SIZE*GRAPH_SIZE);
+    assign in_addr = conv_counter + mem_ptr*(GRAPH_SIZE*GRAPH_SIZE);
     assign in_clean = (state == ZERO);
 
     logic [PRECISION-1:0]   feature_data [INPUT_DIM-1:0];
@@ -120,7 +120,7 @@ module out_serialize #(
         node_x <= (conv_counter_h1 % GRAPH_SIZE);
         node_y <= (conv_counter_h1 - (conv_counter_h1 % GRAPH_SIZE)) / GRAPH_SIZE;
 
-        out_data <= (state_read == CONV) ? feature_data[iter_counter_out] : 1;
+        out_data <= (state_read == CONV) ? feature_data[iter_counter_out] : (in_switch ? 8'd0 : 8'd1);
         out_addr <= (state_read == CONV) ? ((128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512): 128;
         out_valid <= ((state_read == CONV) && !(iter_counter == 0 && conv_counter==0)) || in_switch || (state_read == ZERO);
     end
