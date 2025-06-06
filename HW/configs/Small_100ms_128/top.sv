@@ -550,8 +550,6 @@ module top #(
     logic [$clog2(4*4*3) : 0]         out_read_addr;
     logic                             out_clean;
     logic                             out_switch;
-    logic                             out_clean;
-    logic                             out_switch;
     logic                             serialize_ena;
     logic [1:0]                       serialize_ptr;
 

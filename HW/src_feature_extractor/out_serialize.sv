@@ -120,10 +120,9 @@ module out_serialize #(
         node_x <= (conv_counter_h1 % GRAPH_SIZE);
         node_y <= (conv_counter_h1 - (conv_counter_h1 % GRAPH_SIZE)) / GRAPH_SIZE;
 
-        out_data <= (state_h1 == CONV) ? feature_data[iter_counter_out] : is_valid;
-        out_addr <= (state_h1 == CONV) ? ((128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512): 128;
-        reg_valid <= (state_h1 == CONV) && !(iter_counter == 0 && conv_counter==0);
-        out_valid <= reg_valid || in_switch || (state_h1 == ZERO);
+        out_data <= (state_read == CONV) ? feature_data[iter_counter_out] : 1;
+        out_addr <= (state_read == CONV) ? ((128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512): 128;
+        out_valid <= ((state_read == CONV) && !(iter_counter == 0 && conv_counter==0)) || in_switch || (state_read == ZERO);
     end
 
 endmodule

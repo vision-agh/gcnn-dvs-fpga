@@ -21,19 +21,48 @@ module normalize #(
     output logic [COUNTER_WIDTH-1 : 0] window_counter
 );
 
+    localparam int THRESHOLD = 3125;
+
     graph_pkg::event_type        register;
+    graph_pkg::event_type        register2;
+    graph_pkg::event_type        register3;
     logic [INPUT_BIT_TIME-1: 0]  timestamp_reg;
+    logic [INPUT_BIT_TIME-1: 0]  timestamp_reg2;
+    logic [INPUT_BIT_TIME-1: 0]  timestamp_reg3;
+    logic [INPUT_BIT_TIME-1: 0]  timestamp_cntr = 0;
+    logic [10 : 0]               clk_cntr = 0;
+    logic [31: 0]                iter = 1;
     logic [COUNTER_WIDTH-1 : 0]  sample_counter = 0;
+    logic [COUNTER_WIDTH-1 : 0]  sample_counter2 = 0;
+    logic [COUNTER_WIDTH-1 : 0]  sample_counter3 = 0;
     logic [INPUT_BIT_TIME-1 : 0] time_window_num = TIME_WINDOW;
+    logic is_first = 0;
 
     always @(posedge clk) begin
         if (reset) begin
             register <= '0;
             sample_counter <= 1'b0;
             time_window_num <= TIME_WINDOW;
+            is_first <= 0;
         end
         else begin
-            timestamp_reg <= ((timestamp % TIME_WINDOW)*(GRAPH_SIZE));
+            if (is_first && is_valid) begin
+                timestamp_cntr <= timestamp;
+                clk_cntr <= '0;
+                is_first <= 0;
+            end
+            if (!is_first) begin
+                clk_cntr <= clk_cntr+5;
+                if (clk_cntr >= 1000) begin
+                    timestamp_cntr <= timestamp_cntr+1;
+                    clk_cntr <= '0;
+                end
+                if (is_valid) begin
+                    timestamp_cntr <= timestamp;
+                    clk_cntr <= '0;
+                end
+            end
+            timestamp_reg <= timestamp;
             register.x <= x_coord;
             register.y <= y_coord;
             register.p <= polarity;
@@ -45,9 +74,23 @@ module normalize #(
                     time_window_num <= time_window_num + TIME_WINDOW;
                 end
             end
-            out_event <= register;
-            out_event.t <= timestamp_reg / TIME_WINDOW;
-            window_counter <= sample_counter;
+            if (timestamp_cntr >= (THRESHOLD*iter) && !is_valid) begin
+                register.x <= '0;
+                register.y <= '0;
+                register.p <= '0;
+                register.valid <= '1;
+                iter = iter+1;
+                timestamp_reg <= timestamp_cntr;
+            end
+            timestamp_reg2 <= timestamp_reg % TIME_WINDOW;
+            timestamp_reg3 <= timestamp_reg2 * GRAPH_SIZE;
+            register2 <= register;
+            register3 <= register2;
+            out_event <= register3;
+            out_event.t <= timestamp_reg3 / TIME_WINDOW;
+            sample_counter2 <= sample_counter;
+            sample_counter3 <= sample_counter2;
+            window_counter <= sample_counter3;
         end
     end
 
