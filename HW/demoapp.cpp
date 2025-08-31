@@ -80,9 +80,8 @@ int main()
     //float mult = 0.062758118;
     //float mult = 0.065889716;
     //int zero_point = 110;
-    float mult = 0.050364926;
-    int zero_point = 105;
-    int cnt = 1;
+    float mult = 0.051686693;
+    int zero_point = 107;
     
    for(int i = 0; i < output_dim2; i++)
 	output_vals2_sum[i] = 0;
@@ -199,12 +198,11 @@ int main()
 		    std::cout << "Adres 0x" << std::hex << (start_addr + i*4) << ": 0x" << val << std::endl;
 		}*/
 		
-		prev_val = val;
-		//usleep(5000000);
-		usleep(50000);
-		//usleep(1000000);
-		cnt = cnt + 1;
-	}
+			prev_val = val;
+			//usleep(5000000);
+			usleep(1);
+			//usleep(1000000);
+		}
 	int index1 = 0;
 	int value1 = -1000000;
 	for(int i = 0; i < output_dim2; i++)
@@ -238,7 +236,6 @@ int main()
 		}
 	}
 		    
-
 	std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::endl;
 	//usleep(50000);
 	cnt = 1;
