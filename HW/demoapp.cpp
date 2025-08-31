@@ -147,7 +147,13 @@ int main()
 		    }
 		    std::cout << std::endl;
 		    
-		    
+		    std::cout << "Values after max dequantisation: " << std::endl;
+		    for(int i = 0; i < 512; i++)
+		    {
+		    	std::cout << max_features[i] << " ";
+		    }
+		    std::cout << std::endl;
+
 		    float output_vals1[output_dim1];
 
 		    for(int i = 0; i < output_dim1; i++)
@@ -163,6 +169,13 @@ int main()
 		        output_vals1[out] = sum + bias1[out] < 0 ? 0 : sum + bias1[out];
 		    }
 
+
+		    std::cout << "Values after first linear layer: " << std::endl;
+		    for(int i = 0; i < output_dim1; i++)
+		    {
+		    	std::cout << output_vals1[i] << " ";
+		    }
+		    std::cout << std::endl;
 
 		    float output_vals2[output_dim2];
 
