@@ -83,6 +83,9 @@ int main()
     float mult = 0.051686693;
     int zero_point = 107;
     int cnt = 0;
+    int cnt_p = 0;
+    int cnt_k = 0;
+    int cnt_n = 0;
 
    for(int i = 0; i < output_dim2; i++)
 	output_vals2_sum[i] = 0;
@@ -251,23 +254,41 @@ int main()
 	// }
 
 	if (index1 == 0) {
-		std::cout << "\r DVS plays paper!"  << std::endl;
+		cnt_p = cnt_p + 1;
+		cnt_n = 0;
+		cnt_k = 0;
 		cnt = 0;
 	}
 	if (index1 == 1) {
-		std::cout << "\r DVS plays scissors!"  << std::endl;
+		cnt_n = cnt_n + 1;
+		cnt_p = 0;
+		cnt_k = 0;
 		cnt = 0;
 	}
 	if (index1 == 2) {
-		std::cout << "\r DVS plays rock!"  << std::endl;
+		cnt_k = cnt_k + 1;
+		cnt_n = 0;
+		cnt_p = 0;
 		cnt = 0;
 	}
 	if (index1 == 3) {
 		cnt = cnt + 1;
+		cnt_n = 0;
+		cnt_p = 0;
+		cnt_k = 0;
 	}
-	if (index1 == 3 && cnt > 9) {
-		cnt = cnt + 1;
-		std::cout << "\r Let's play Rock-Paper-Scissors! Are you ready?"  << std::endl;
+
+	if (cnt_p > 4) {
+		std::cout << "\r DVS plays paper!"  << std::flush;
+	}
+	if (cnt_n > 4) {
+		std::cout << "\r DVS plays scissors!"  << std::flush;
+	}
+	if (cnt_k > 4) {
+		std::cout << "\r DVS plays rock!"  << std::flush;
+	}
+	if (cnt > 40) {
+		std::cout << "\r Let's play Rock-Paper-Scissors! Are you ready?"  << std::flush;
 	}
 
 	//std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::endl;
