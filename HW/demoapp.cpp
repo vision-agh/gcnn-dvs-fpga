@@ -219,17 +219,63 @@ int main()
 			//usleep(5000000);
 			usleep(1);
 			//usleep(1000000);
+			int index1 = 0;
+			int value1 = -1000000;
+			for(int i = 0; i < output_dim2; i++)
+			{
+			    if(output_vals2_sum[i] > value1)
+				{
+				    value1 = output_vals2_sum[i];
+				    index1 = i;
+				}
+			}
+			if (index1 == 0) {
+				cnt_p = cnt_p + 1;
+				cnt_n = 0;
+				cnt_k = 0;
+				cnt = 0;
+			}
+			if (index1 == 1) {
+				cnt_n = cnt_n + 1;
+				cnt_p = 0;
+				cnt_k = 0;
+				cnt = 0;
+			}
+			if (index1 == 2) {
+				cnt_k = cnt_k + 1;
+				cnt_n = 0;
+				cnt_p = 0;
+				cnt = 0;
+			}
+			if (index1 == 3) {
+				cnt = cnt + 1;
+				cnt_n = 0;
+				cnt_p = 0;
+				cnt_k = 0;
+			}
+
+			if (cnt_p > 4) {
+				std::cout << "\r DVS plays paper!"  << std::flush;
+			}
+			if (cnt_n > 4) {
+				std::cout << "\r DVS plays scissors!"  << std::flush;
+			}
+			if (cnt_k > 4) {
+				std::cout << "\r DVS plays rock!"  << std::flush;
+			}
+			if (cnt > 40) {
+				std::cout << "\r Let's play Rock-Paper-Scissors! Are you ready?"  << std::flush;
+			}
+
+			//std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::endl;
+			//usleep(50000);
+			//cnt = 1;
+
+		   	for(int i = 0; i < output_dim2; i++)
+				output_vals2_sum[i] = 0;
+			
+		    }
 		}
-	int index1 = 0;
-	int value1 = -1000000;
-	for(int i = 0; i < output_dim2; i++)
-	{
-	    if(output_vals2_sum[i] > value1)
-		{
-		    value1 = output_vals2_sum[i];
-		    index1 = i;
-		}
-	}
 
 	// int index2 = 0;
 	// int value2 = -1000000;
@@ -252,53 +298,6 @@ int main()
 	// 	    index3 = i;
 	// 	}
 	// }
-
-	if (index1 == 0) {
-		cnt_p = cnt_p + 1;
-		cnt_n = 0;
-		cnt_k = 0;
-		cnt = 0;
-	}
-	if (index1 == 1) {
-		cnt_n = cnt_n + 1;
-		cnt_p = 0;
-		cnt_k = 0;
-		cnt = 0;
-	}
-	if (index1 == 2) {
-		cnt_k = cnt_k + 1;
-		cnt_n = 0;
-		cnt_p = 0;
-		cnt = 0;
-	}
-	if (index1 == 3) {
-		cnt = cnt + 1;
-		cnt_n = 0;
-		cnt_p = 0;
-		cnt_k = 0;
-	}
-
-	if (cnt_p > 4) {
-		std::cout << "\r DVS plays paper!"  << std::flush;
-	}
-	if (cnt_n > 4) {
-		std::cout << "\r DVS plays scissors!"  << std::flush;
-	}
-	if (cnt_k > 4) {
-		std::cout << "\r DVS plays rock!"  << std::flush;
-	}
-	if (cnt > 40) {
-		std::cout << "\r Let's play Rock-Paper-Scissors! Are you ready?"  << std::flush;
-	}
-
-	//std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::endl;
-	//usleep(50000);
-	//cnt = 1;
-
-   	for(int i = 0; i < output_dim2; i++)
-		output_vals2_sum[i] = 0;
-	
-    }
 
     munmap(map_base, page_size);
     close(fd);
