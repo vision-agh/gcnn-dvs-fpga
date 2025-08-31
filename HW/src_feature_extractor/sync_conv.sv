@@ -65,15 +65,15 @@ module sync_conv #(
     logic [3 : 0]            edge_counter_compare; //Count to 9
     logic [3 : 0]            edge_counter_accumulate; //Count to 9
     
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_h1; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_read; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_in; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_h1; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_h2; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_mul_out; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_compare; //Count to OUTPUT_DIM
-    logic [ITER_CNT_WIDTH-1 : 0] iter_counter_accumulate; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_h1; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_read; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_mul_in; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_mul_h1; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_mul_h2; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_mul_out; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_compare; //Count to OUTPUT_DIM
+    logic [ITER_CNT_WIDTH : 0] iter_counter_accumulate; //Count to OUTPUT_DIM
 
     always @(posedge clk) begin
         if (reset) begin
@@ -87,6 +87,7 @@ module sync_conv #(
         else begin
             // Perform Convolution after in_switch
             if (state == CONV) begin
+                iter_counter <= iter_counter + 1;
                 if (iter_counter == OUTPUT_DIM-1) begin
                     iter_counter <= '0;
                     edge_counter <= edge_counter + 1;
@@ -95,7 +96,6 @@ module sync_conv #(
                     edge_counter <= '0;
                     conv_counter <= conv_counter + 1;
                 end
-                iter_counter <= iter_counter + 1;
             end
             if (in_switch) begin
                 state <= CONV;
@@ -201,7 +201,7 @@ module sync_conv #(
     logic signed [PRECISION:0] single_weight [INPUT_DIM+1:0];
     logic signed [31:0]        single_bias;
 
-    localparam WEIGHT_WIDTH = ((INPUT_DIM+2)*(PRECISION))+32; //bias
+    localparam WEIGHT_WIDTH = ((INPUT_DIM+2)*(8))+32; //bias
     logic [WEIGHT_WIDTH-1 : 0] weight_mem;
 
     memory_weights #(
@@ -225,7 +225,7 @@ module sync_conv #(
     generate
         for (w = 0; w < INPUT_DIM+2; w++) begin : weights_assign
             always @(posedge clk) begin
-                single_weight_reg[w] <= weight_mem[(((PRECISION)*(w+1))-1)+32 : ((PRECISION)*w)+32] - ZERO_POINT_WEIGHT;
+                single_weight_reg[w] <= weight_mem[(((8)*(w+1))-1)+32 : ((8)*w)+32] - ZERO_POINT_WEIGHT;
             end
         end
     endgenerate
@@ -354,7 +354,7 @@ module sync_conv #(
     // synthesis translate_off
     always @(posedge clk) begin
         if (state != IDLE && in_switch) begin
-            $display("CONVOLUTION THROUGHPUT IS TOO SMALL - EXIT THE SIMULATION");
+            $display("CONVOLUTION THROUGHPUT IS TOO SMALL - EXIT THE SIMULATION (%m)");
             $stop;
         end
     end

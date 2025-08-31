@@ -15,7 +15,7 @@ module async_conv #(
     input  graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] in_edges,
 
     input logic signed [PRECISION:0]                         weights [OUTPUT_DIM-1:0][INPUT_DIM-1:0],
-    input logic signed [31:0]                                bias [15:0],
+    input logic signed [31:0]                                bias [OUTPUT_DIM-1:0],
 
     output graph_pkg::event_type                             out_event,
     output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] out_edges,
@@ -27,7 +27,7 @@ module async_conv #(
     // Relative position input feature quantization parameters
     localparam logic signed [PRECISION:0] NEG_3 = -SCALE_IN[2];
     localparam logic signed [PRECISION:0] NEG_2 = -SCALE_IN[1];
-    localparam logic signed [PRECISION:0] NEG_1 = -SCALE_IN[0];
+    localparam logic signed [PRECISION:0] NEG_1 = -10;
     localparam logic signed [PRECISION:0] POS_1 = SCALE_IN[0];
     localparam logic signed [PRECISION:0] POS_2 = SCALE_IN[1];
     localparam logic signed [PRECISION:0] POS_3 = SCALE_IN[2];
@@ -87,7 +87,7 @@ module async_conv #(
     
     // Port A
     always @(posedge clk) begin
-        feature_mat_a[0] <= (counter==MEMORY_OPS_NUM-1) ? (temp_event.p ? POS_1 : -POS_1) : (temp_edges[counter].attribute ? POS_1 : -POS_1);
+        feature_mat_a[0] <= (counter==MEMORY_OPS_NUM-1) ? (temp_event.p ? POS_1 : NEG_1) : (temp_edges[counter].attribute ? POS_1 : NEG_1);
         feature_mat_a[1] <= FEATURES_A_X[counter];
         feature_mat_a[2] <= FEATURES_A_Y[counter];
     end
@@ -96,7 +96,8 @@ module async_conv #(
         .INPUT_DIM         ( INPUT_DIM         ),
         .OUTPUT_DIM        ( OUTPUT_DIM        ),
         .MULTIPLIER        ( MULTIPLIER_OUT    ),
-        .ZERO_POINT        ( ZERO_POINT        )
+        .ZERO_POINT        ( ZERO_POINT        ),
+        .PRECISION         ( PRECISION         )
     ) mul_a (
         .clk             ( clk             ),
         .reset           ( reset           ),
@@ -108,7 +109,7 @@ module async_conv #(
 
     // PORT B
     always @(posedge clk) begin
-       feature_mat_b[0] <= temp_edges[MEMORY_OPS_NUM-1+counter].attribute ? POS_1 : -POS_1;
+       feature_mat_b[0] <= temp_edges[MEMORY_OPS_NUM-1+counter].attribute ? POS_1 : NEG_1;
        feature_mat_b[1] <= FEATURES_B_X[counter];
        feature_mat_b[2] <= FEATURES_B_Y[counter]; 
     end
@@ -117,7 +118,8 @@ module async_conv #(
         .INPUT_DIM         ( INPUT_DIM         ),
         .OUTPUT_DIM        ( OUTPUT_DIM        ),
         .MULTIPLIER        ( MULTIPLIER_OUT    ),
-        .ZERO_POINT        ( ZERO_POINT        )
+        .ZERO_POINT        ( ZERO_POINT        ),
+        .PRECISION         ( PRECISION         )
     ) mul_b (
         .clk             ( clk             ),
         .reset           ( reset           ),

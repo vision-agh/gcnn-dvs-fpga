@@ -2,7 +2,7 @@
 
 module vector_multiplication #(
     parameter int INPUT_DIM = 4,
-    parameter int PRECISION = 8,
+    parameter int PRECISION = graph_pkg::PRECISION,
     parameter int MULTIPLIER = 0,
     parameter int ZERO_POINT = 0
 )( 
@@ -15,6 +15,7 @@ module vector_multiplication #(
 );
 
     localparam PARALLEL = INPUT_DIM / 4;
+    localparam ADDITIONAL = (INPUT_DIM) % 4;
 
     logic signed [31:0]        matrix_result [PARALLEL : 0];
     logic signed [31:0]        matrix_result_reg [PARALLEL : 0];
@@ -37,13 +38,21 @@ module vector_multiplication #(
         end
     endgenerate
 
-    always @(posedge clk) begin
-        matrix_result[PARALLEL] = 0;
-        for (int j=INPUT_DIM-2; j<INPUT_DIM; j=j+1) begin: cols
-            matrix_result[PARALLEL] = matrix_result[PARALLEL] + (feature_matrix[j] * weight_matrix[j]);
+    generate
+        if (ADDITIONAL != 0) begin
+            always @(posedge clk) begin
+                matrix_result[PARALLEL] = 0;
+                for (int j=INPUT_DIM-ADDITIONAL; j<INPUT_DIM; j=j+1) begin: cols
+                    
+                    matrix_result[PARALLEL] = matrix_result[PARALLEL] + (feature_matrix[j] * weight_matrix[j]);
+                end
+                matrix_result_reg[PARALLEL] <= matrix_result[PARALLEL];
+            end
         end
-        matrix_result_reg[PARALLEL] <= matrix_result[PARALLEL];
-    end
+        else begin
+            assign matrix_result_reg[PARALLEL] = 0;
+        end
+    endgenerate
 
     always @(posedge clk) begin
         debug_bias = bias_reg;

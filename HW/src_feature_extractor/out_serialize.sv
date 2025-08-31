@@ -58,13 +58,13 @@ module out_serialize #(
         else begin
                 // Perform Convolution after in_switch
             if (state == CONV) begin
+                iter_counter <= iter_counter + 1;
                 if (iter_counter == INPUT_DIM-1) begin
                     iter_counter <= '0;
                 end
                 if (iter_counter == INPUT_DIM-1) begin
                     conv_counter <= conv_counter + 1;
                 end
-                iter_counter <= iter_counter + 1;
             end
             if (in_switch) begin
                 node_t <= node_t + 1;
@@ -96,9 +96,8 @@ module out_serialize #(
 
     logic [$clog2(GRAPH_SIZE) -1 :0] node_x;
     logic [$clog2(GRAPH_SIZE) -1 :0] node_y;
-    logic reg_valid;
 
-    assign in_addr = conv_counter + mem_ptr*(GRAPH_SIZE*GRAPH_SIZE);
+    assign in_addr = conv_counter;
     assign in_clean = (state == ZERO);
 
     logic [PRECISION-1:0]   feature_data [INPUT_DIM-1:0];
@@ -112,15 +111,12 @@ module out_serialize #(
         end
     endgenerate
 
-    logic [PRECISION-1 : 0] is_valid;
-    assign is_valid = (state == ZERO) ? 1 : 0;
-
     always @(posedge clk) begin
         // Y* GRAPH + X + 512*t
         node_x <= (conv_counter_h1 % GRAPH_SIZE);
         node_y <= (conv_counter_h1 - (conv_counter_h1 % GRAPH_SIZE)) / GRAPH_SIZE;
 
-        out_data <= (state_read == CONV) ? feature_data[iter_counter_out] : (in_switch ? 8'd0 : 8'd1);
+        out_data <= (state_read == CONV) ? feature_data[iter_counter_out] : (in_switch ? 6'd0 : 6'd1);
         out_addr <= (state_read == CONV) ? ((128 * node_x) + (32 * node_y) + (node_t*512) + iter_counter_out + 512): 128;
         out_valid <= ((state_read == CONV) && !(iter_counter == 0 && conv_counter==0)) || in_switch || (state_read == ZERO);
     end

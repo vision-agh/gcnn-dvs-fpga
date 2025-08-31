@@ -2,7 +2,7 @@ module async_maxpool #(
     parameter int IN_GRAPH_SIZE	 = 128,
     parameter int OUT_GRAPH_SIZE = 32,
     parameter int PRECISION	     = graph_pkg::PRECISION,
-    parameter int INPUT_DIM      = 16,
+    parameter int INPUT_DIM      = 18,
     parameter int ADDR_WIDTH     = $clog2(OUT_GRAPH_SIZE*OUT_GRAPH_SIZE),
     parameter int DATA_WIDTH     = (INPUT_DIM*PRECISION) + (9*2) //edges
 )( 

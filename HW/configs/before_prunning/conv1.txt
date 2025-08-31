@@ -1,0 +1,40 @@
+Input scale (32 bit):
+ 101058064
+Input zero point:
+ 127
+Weight scale (32 bit):
+ 32941970
+Weight zero point:
+ 129
+Output scale (32 bit):
+ 109079800
+Output zero point:
+ 125
+M Scales (32 bit):
+ 30519416
+Weight (8 bit):
+weights_conv[0] = {68, 74, 88};
+weights_conv[1] = {-86, 71, 38};
+weights_conv[2] = {30, -116, 17};
+weights_conv[3] = {-14, 28, -129};
+weights_conv[4] = {-70, -29, 111};
+weights_conv[5] = {37, 112, -60};
+weights_conv[6] = {-106, -59, 54};
+weights_conv[7] = {33, -79, -79};
+weights_conv[8] = {-33, 119, 64};
+weights_conv[9] = {-72, 55, -96};
+weights_conv[10] = {50, -39, 105};
+weights_conv[11] = {77, -40, -84};
+weights_conv[12] = {125, -12, 33};
+weights_conv[13] = {-30, -99, 68};
+weights_conv[14] = {-22, -40, 112};
+weights_conv[15] = {3, -39, -125};
+weights_conv[16] = {-34, -121, -8};
+weights_conv[17] = {-74, -70, -88};
+
+Bias (8 bit):
+bias_conv = {158, -213, 1096, 978, 422, 621, 760, 777, 1597, 412, 615, 1577, 872, 1005, 612, 286, 4, 682};
+Input range (8 bit):
+ [-3, -2, -1, 0, 1, 2, 3]
+Output range (8 bit):
+ [-127, -85, -42, 0, 42, 85, 127]
