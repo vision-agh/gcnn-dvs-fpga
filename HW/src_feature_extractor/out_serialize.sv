@@ -54,6 +54,7 @@ module out_serialize #(
             conv_counter <= '0;
             iter_counter <= '0;
             node_t <= GRAPH_SIZE-1;
+            mem_ptr <= '0;
         end
         else begin
                 // Perform Convolution after in_switch

@@ -39,6 +39,7 @@ module feature_memory_simple #(
         if (reset) begin
             clean_addr <= '0;
         end
+        clean_addr <= '0;
         if (out_clean) begin
             if (clean_addr < (GRAPH_SIZE*GRAPH_SIZE)) begin
                 clean_addr <= clean_addr + 1;

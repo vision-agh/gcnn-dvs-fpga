@@ -42,6 +42,10 @@ module edges_gen #(
     graph_pkg::event_type                     fifo_event;
     logic [COUNTER_WIDTH-1 : 0]               fifo_window_counter;
     
+    logic ena;
+    logic wea;
+    logic web;
+    logic enb;
     
     always @(posedge clk) begin
         if (reset) begin
@@ -98,10 +102,6 @@ module edges_gen #(
     logic [DATA_WIDTH-1:0] douta;
     logic [DATA_WIDTH-1:0] doutb;
 
-    logic ena;
-    logic wea;
-    logic web;
-    logic enb;
 
     // Context memroy module
     memory #(
@@ -168,10 +168,12 @@ module edges_gen #(
 
     logic [$clog2(RADIUS) : 0] diff_t_b;
     logic                      condition_b_1, condition_b_2, connect_b;
+    logic                  fake_event;
+    assign fake_event = (fifo_event.x == 0) && (fifo_event.y == 0) && (fifo_event.p == 0);
     assign diff_t_b = fifo_event.t >= doutb[GRAPH_WIDTH+1:2] ? fifo_event.t-doutb[GRAPH_WIDTH+1:2] : (fifo_event.t+128)-doutb[GRAPH_WIDTH+1:2];
     assign condition_b_1 = ((fifo_event.t-doutb[GRAPH_WIDTH+1:2]) <= RADIUS) && 
                            fifo_window_counter == doutb[DATA_WIDTH-1:GRAPH_WIDTH+2] && 
-                           (fifo_event.t >= doutb[GRAPH_WIDTH+1:2]);
+                           (fifo_event.t >= doutb[GRAPH_WIDTH+1:2]) && !fake_event;
     assign condition_b_2 = fifo_event.t < RADIUS && 
                            (doutb[GRAPH_WIDTH+1:2] - fifo_event.t) >= (GRAPH_SIZE-RADIUS) &&
                            fifo_window_counter == doutb[DATA_WIDTH-1:GRAPH_WIDTH+2]+1;
@@ -193,6 +195,7 @@ module edges_gen #(
             end
             else begin
                 counter <= 0;
+
             end
         
             // Port A (14 reads and write)

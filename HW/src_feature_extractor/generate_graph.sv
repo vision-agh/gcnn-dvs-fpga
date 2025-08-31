@@ -29,6 +29,7 @@ module generate_graph #(
 /////////////////////////////////////////////////////////////////
 
     normalize #(
+    //HIL_event #(
         .MAX_X_COORD    ( MAX_X_COORD            ),
         .MAX_Y_COORD    ( MAX_Y_COORD            ),
         .GRAPH_SIZE     ( graph_pkg::GRAPH_SIZE  ),
