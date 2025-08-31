@@ -82,7 +82,8 @@ int main()
     //int zero_point = 110;
     float mult = 0.051686693;
     int zero_point = 107;
-    
+    int cnt = 0;
+
    for(int i = 0; i < output_dim2; i++)
 	output_vals2_sum[i] = 0;
     
@@ -117,7 +118,7 @@ int main()
 			max_features[i] = -1000000;
 		    }
 		    
-		    //usleep(1000);
+		    //usleep(1);
 		    
 		    /*for (int i = 0; i < 513; i++) // 8 * 4B = 32B
 		    {
@@ -135,24 +136,24 @@ int main()
 		    }
 		    
 		    //std::cout << std::endl;
-		    std::cout << "Values after max operation: " << std::endl;
+		    //std::cout << "Values after max operation: " << std::endl;
 		    
 		    for(int i = 0; i < 512; i++)
 		    {
 		    	int max1 = features[0][i] >= features[1][i] ? features[0][i] : features[1][i];
 		        int max2 = features[2][i] >= features[3][i] ? features[2][i] : features[3][i];
 		        max_features[i] = max1 >= max2 ? max1 : max2;
-		        std::cout << max_features[i] << " ";
+		        //std::cout << max_features[i] << " ";
 		        max_features[i] = (max_features[i] - zero_point) * mult;
 		    }
-		    std::cout << std::endl;
+		    //std::cout << std::endl;
 		    
-		    std::cout << "Values after max dequantisation: " << std::endl;
-		    for(int i = 0; i < 512; i++)
-		    {
-		    	std::cout << max_features[i] << " ";
-		    }
-		    std::cout << std::endl;
+		    //std::cout << "Values after max dequantisation: " << std::endl;
+		    // for(int i = 0; i < 512; i++)
+		    // {
+		    // 	std::cout << max_features[i] << " ";
+		    // }
+		    //std::cout << std::endl;
 
 		    float output_vals1[output_dim1];
 
@@ -170,19 +171,19 @@ int main()
 		    }
 
 
-		    std::cout << "Values after first linear layer: " << std::endl;
-		    for(int i = 0; i < output_dim1; i++)
-		    {
-		    	std::cout << output_vals1[i] << " ";
-		    }
-		    std::cout << std::endl;
+		    // std::cout << "Values after first linear layer: " << std::endl;
+		    // for(int i = 0; i < output_dim1; i++)
+		    // {
+		    // 	std::cout << output_vals1[i] << " ";
+		    // }
+		    // std::cout << std::endl;
 
 		    float output_vals2[output_dim2];
 
 		    for(int i = 0; i < output_dim2; i++)
 		        output_vals2[i] = 0;
 
-		    std::cout << "Values after second linear layer: ";
+		    //std::cout << "Values after second linear layer: ";
 		    
 		    for(int out = 0; out < output_dim2; out++)
 		    {
@@ -193,9 +194,9 @@ int main()
 		        }
 		        output_vals2[out] = sum + bias2[out];
 		        output_vals2_sum[out] = output_vals2[out];
-		        std::cout << output_vals2[out] << " ";
+		        //std::cout << output_vals2[out] << " ";
 		    }
-		    std::cout << std::endl;
+		    //std::cout << std::endl;
 
 		    //std::cout << "\r Predicted class: " << index1 << std::endl;
 		    //std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::flush;
@@ -227,31 +228,52 @@ int main()
 		}
 	}
 
-	int index2 = 0;
-	int value2 = -1000000;
-	for(int i = 0; i < output_dim2; i++)
-	{
-	if(output_vals2_sum[i] > value2 && i != index1)
-	   {
-	       value2 = output_vals2_sum[i];
-	       index2 = i;
-	   }
+	// int index2 = 0;
+	// int value2 = -1000000;
+	// for(int i = 0; i < output_dim2; i++)
+	// {
+	// if(output_vals2_sum[i] > value2 && i != index1)
+	//    {
+	//        value2 = output_vals2_sum[i];
+	//        index2 = i;
+	//    }
+	// }
+
+	// int index3 = 0;
+    //     int value3 = -1000000;
+	//    for(int i = 0; i < output_dim2; i++)
+	//     {
+	// 	if(output_vals2_sum[i] > value3 && i != index1 && i != index2)
+	// 	{
+	// 	    value3 = output_vals2_sum[i];
+	// 	    index3 = i;
+	// 	}
+	// }
+
+	if (index1 == 0) {
+		std::cout << "\r DVS plays paper!"  << std::endl;
+		cnt = 0;
+	}
+	if (index1 == 1) {
+		std::cout << "\r DVS plays scissors!"  << std::endl;
+		cnt = 0;
+	}
+	if (index1 == 2) {
+		std::cout << "\r DVS plays rock!"  << std::endl;
+		cnt = 0;
+	}
+	if (index1 == 3) {
+		cnt = cnt + 1;
+	}
+	if (index1 == 3 && cnt > 9) {
+		cnt = cnt + 1;
+		std::cout << "\r Let's play Rock-Paper-Scissors! Are you ready?"  << std::endl;
 	}
 
-	int index3 = 0;
-        int value3 = -1000000;
-	   for(int i = 0; i < output_dim2; i++)
-	    {
-		if(output_vals2_sum[i] > value3 && i != index1 && i != index2)
-		{
-		    value3 = output_vals2_sum[i];
-		    index3 = i;
-		}
-	}
-		    
-	std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::endl;
+	//std::cout << "\r Predicted class: " << index1 << " (top 3): " << index1 << ", " << index2 << ", " << index3 << std::endl;
 	//usleep(50000);
-	cnt = 1;
+	//cnt = 1;
+
    	for(int i = 0; i < output_dim2; i++)
 		output_vals2_sum[i] = 0;
 	
