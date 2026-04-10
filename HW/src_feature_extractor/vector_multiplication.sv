@@ -2,7 +2,7 @@
 
 module vector_multiplication #(
     parameter int INPUT_DIM = 4,
-    parameter int PRECISION = 8,
+    parameter int PRECISION = graph_pkg::PRECISION,
     parameter int MULTIPLIER = 0,
     parameter int ZERO_POINT = 0
 )( 
@@ -18,9 +18,11 @@ module vector_multiplication #(
 
     logic signed [31:0]        matrix_result [PARALLEL : 0];
     logic signed [31:0]        matrix_result_reg [PARALLEL : 0];
-    logic signed [63:0]        debug_bias ;
-    logic signed [63:0]        debug_mul;
+    logic signed [31:0]        debug_bias ;
+    logic signed [31:0]        debug_mul;
     logic signed [31:0]        bias_reg;
+    logic signed [63:0]        product;
+    logic signed [63:0]        product2;
 
     genvar p;
     generate
@@ -49,7 +51,9 @@ module vector_multiplication #(
             debug_bias = debug_bias + matrix_result_reg[i];
         end
         debug_mul <= debug_bias;
-        output_matrix <= ((debug_mul*MULTIPLIER)>>>32) + ZERO_POINT;
+        product = debug_mul*MULTIPLIER;
+        product2 = (product + 32'h8000_0000) >>> 32;
+        output_matrix <= product2 + ZERO_POINT;
         bias_reg <= bias;
     end
 

@@ -197,11 +197,12 @@ module sync_conv #(
     endgenerate
 
     logic signed [PRECISION:0] single_weight_reg [INPUT_DIM+2:0];
+    logic signed [8:0]         single_weight_prec [INPUT_DIM+2:0];
     logic signed [31:0]        single_bias_reg;
     logic signed [PRECISION:0] single_weight [INPUT_DIM+2:0];
     logic signed [31:0]        single_bias;
 
-    localparam WEIGHT_WIDTH = ((INPUT_DIM+3)*(PRECISION))+32; //bias
+    localparam WEIGHT_WIDTH = ((INPUT_DIM+3)*(8))+32; //bias
     logic [WEIGHT_WIDTH-1 : 0] weight_mem;
 
     memory_weights #(
@@ -226,7 +227,9 @@ module sync_conv #(
     generate
         for (w = 0; w < INPUT_DIM+3; w++) begin : weights_assign
             always @(posedge clk) begin
-                single_weight_reg[w] <= weight_mem[(((PRECISION)*(w+1))-1)+32 : ((PRECISION)*w)+32] - ZERO_POINT_WEIGHT;
+                single_weight_prec[w] = weight_mem[(((8)*(w+1))-1)+32 : ((8)*w)+32] - ZERO_POINT_WEIGHT;
+                single_weight_reg[w] <= single_weight_prec[w][PRECISION:0];
+                
             end
         end
     endgenerate

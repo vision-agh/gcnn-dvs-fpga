@@ -3,7 +3,7 @@
 module matrix_multiplication #(
     parameter int INPUT_DIM = 4,
     parameter int OUTPUT_DIM = 8,
-    parameter int PRECISION = 8,
+    parameter int PRECISION = 6,
     parameter int MULTIPLIER = 0,
     parameter int ZERO_POINT = 0
 )( 
@@ -18,6 +18,7 @@ module matrix_multiplication #(
     logic signed [31:0]        matrix_result  [OUTPUT_DIM-1:0];
     logic signed [63:0]        debug_bias  [OUTPUT_DIM-1:0];
     logic signed [63:0]        debug_mul  [OUTPUT_DIM-1:0];
+    logic signed [63:0]        product  [OUTPUT_DIM-1:0];
 
     genvar m;
 
@@ -31,8 +32,9 @@ module matrix_multiplication #(
                 debug_bias[m] <= (matrix_result[m]+bias[m]);
             end
             always @(posedge clk) begin
-                debug_mul[m] = (debug_bias[m]*MULTIPLIER)>>>32;
-                output_matrix[m] <= debug_mul[m][31:0] + ZERO_POINT;
+                product[m] = (debug_bias[m]*MULTIPLIER);
+                debug_mul[m] = product[m]>>>32;
+                output_matrix[m] <= debug_mul[m][PRECISION-1:0] + ZERO_POINT + product[m][31];
             end
         end
     endgenerate
