@@ -21,10 +21,19 @@ module top #(
     input logic                       polarity,
     input logic                       is_valid,
 
-    output logic [$clog2(4*4*4)-1 : 0]        out_addr,
-    output logic [graph_pkg::PRECISION-1 : 0] out_data,
-    output logic                              out_valid
+//    output logic [$clog2(4*4*4)-1 : 0]        out_addr,
+//    output logic [graph_pkg::PRECISION-1 : 0] out_data,
+//    output logic                              out_valid
 
+    output logic out_valid_conv5,
+    output logic [1:0] mem_ptr_conv5,
+    output logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5,
+    output logic [17 : 0] out_edges_conv5,
+    output logic [7 : 0]  features_conv5 [31 : 0]
+
+//    output logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0],
+//    output graph_pkg::event_type                             event_to_maxpool1,
+//    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1
 );
     // GCNN accelerator for MNIST-DVS classification with the following network structure:
     // u_generate_graph     -> graph representation generation with event-by-event updates
@@ -47,36 +56,36 @@ module top #(
     localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/configs/Small_100ms_128/"};
 
     // Parameters for each convolutional layer
-    localparam ZERO_POINT_CONV1 = 149;
-    localparam MULTIPLIER_OUT_CONV1 = 25508880;
+    localparam ZERO_POINT_CONV1 = 122;
+    localparam MULTIPLIER_OUT_CONV1 = 32209650;
     localparam int SCALE_IN_CONV1 [2:0] = {127, 85, 42};
 
     localparam ZERO_POINT_IN_CONV2 = ZERO_POINT_CONV1;
-    localparam ZERO_POINT_OUT_CONV2 = 200;
-    localparam MULTIPLIER_OUT_CONV2 = 40012032;
-    localparam SCALE_IN_CONV2 = 35;
-    localparam ZERO_POINT_WEIGHT_CONV2 = 190;
+    localparam ZERO_POINT_OUT_CONV2 = 112;
+    localparam MULTIPLIER_OUT_CONV2 = 26283262;
+    localparam SCALE_IN_CONV2 = 38;
+    localparam ZERO_POINT_WEIGHT_CONV2 = 137;
     localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2_param.mem"};
 
     localparam ZERO_POINT_IN_CONV3 = ZERO_POINT_OUT_CONV2;
-    localparam ZERO_POINT_OUT_CONV3 = 203;
-    localparam MULTIPLIER_OUT_CONV3 = 47508080;
-    localparam SCALE_IN_CONV3 = 18;
-    localparam ZERO_POINT_WEIGHT_CONV3 = 165;
+    localparam ZERO_POINT_OUT_CONV3 = 115;
+    localparam MULTIPLIER_OUT_CONV3 = 44106332;
+    localparam SCALE_IN_CONV3 = 19;
+    localparam ZERO_POINT_WEIGHT_CONV3 = 105;
     localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3_param.mem"};
 
     localparam ZERO_POINT_IN_CONV4 = ZERO_POINT_OUT_CONV3;
-    localparam ZERO_POINT_OUT_CONV4 = 195;
-    localparam MULTIPLIER_OUT_CONV4 = 51488348;
-    localparam SCALE_IN_CONV4 = 17;
-    localparam ZERO_POINT_WEIGHT_CONV4 = 173;
+    localparam ZERO_POINT_OUT_CONV4 = 120;
+    localparam MULTIPLIER_OUT_CONV4 = 50064984;
+    localparam SCALE_IN_CONV4 = 19;
+    localparam ZERO_POINT_WEIGHT_CONV4 = 132;
     localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4_param.mem"};
 
     localparam ZERO_POINT_IN_CONV5 = ZERO_POINT_OUT_CONV4;
-    localparam ZERO_POINT_OUT_CONV5 = 213;
-    localparam MULTIPLIER_OUT_CONV5 = 71936992;
-    localparam SCALE_IN_CONV5 = 13;
-    localparam ZERO_POINT_WEIGHT_CONV5 = 199;
+    localparam ZERO_POINT_OUT_CONV5 = 103;
+    localparam MULTIPLIER_OUT_CONV5 = 44022388;
+    localparam SCALE_IN_CONV5 = 19;
+    localparam ZERO_POINT_WEIGHT_CONV5 = 146;
     localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "conv5_param.mem"};
 
     /////////////////////////////////////////
@@ -112,25 +121,25 @@ module top #(
 
     logic signed [graph_pkg::PRECISION:0] weights_conv1 [15:0][3:0];
     initial begin
-        weights_conv1[0] = {-6, 105, 45, 0};
-        weights_conv1[1] = {59, 2, -8, -23};
-        weights_conv1[2] = {56, -9, -7, -9};
-        weights_conv1[3] = {-3, -103, -47, -1};
-        weights_conv1[4] = {-9, -72, 40, 0};
-        weights_conv1[5] = {10, -1, -3, 2};
-        weights_conv1[6] = {112, 7, -14, -120};
-        weights_conv1[7] = {-13, 1, 98, 2};
-        weights_conv1[8] = {6, -30, 0, 12};
-        weights_conv1[9] = {130, -4, 11, 121};
-        weights_conv1[10] = {24, 11, 22, 10};
-        weights_conv1[11] = {73, 9, -24, 3};
-        weights_conv1[12] = {-17, -16, -98, -2};
-        weights_conv1[13] = {56, -4, 4, -3};
-        weights_conv1[14] = {18, 18, 11, 17};
-        weights_conv1[15] = {-7, 86, -34, -5};
+        weights_conv1[0] <= '{-17, 107, 28, 46};
+        weights_conv1[1] <= '{13, 76, -33, -69};
+        weights_conv1[2] <= '{-6, -64, -48, 87};
+        weights_conv1[3] <= '{1, 5, 5, -147};
+        weights_conv1[4] <= '{-18, 32, -113, -51};
+        weights_conv1[5] <= '{-20, 56, -43, 98};
+        weights_conv1[6] <= '{-9, 40, 107, -59};
+        weights_conv1[7] <= '{-2, -67, 91, 62};
+        weights_conv1[8] <= '{-42, -25, -21, 91};
+        weights_conv1[9] <= '{-29, -25, 62, -81};
+        weights_conv1[10] <= '{-10, -114, -55, -19};
+        weights_conv1[11] <= '{-17, 87, -20, -87};
+        weights_conv1[12] <= '{5, -41, -106, 50};
+        weights_conv1[13] <= '{-26, -22, -97, 20};
+        weights_conv1[14] <= '{-65, -4, -75, 7};
+        weights_conv1[15] <= '{-51, -32, -57, -59};
     end
 
-    const logic signed [31:0] bias_conv1 [15:0] = {-3237, -3343, -845, -2419, -3417, -3539, -2513, -4369, -1880, -2075, -439, -1841, -2890, -1806, -2509, -2823};
+    const logic signed [31:0] bias_conv1 [15:0] = {-1082, -2157, -937, 564, 1619, 54, 88, 108, 598, 1485, 64, 328, 1790, 552, 837, 231};
 
     logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0];
     graph_pkg::event_type                             event_to_maxpool1;
@@ -447,11 +456,11 @@ module top #(
        .out_switch ( conv5_switch       )
     );
 
-    logic out_valid_conv5;
-    logic [1:0] mem_ptr_conv5;
-    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
-    logic [17 : 0] out_edges_conv5;
-    logic [7 : 0]  features_conv5 [31 : 0];
+//    logic out_valid_conv5;
+//    logic [1:0] mem_ptr_conv5;
+//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
+//    logic [17 : 0] out_edges_conv5;
+//    logic [7 : 0]  features_conv5 [31 : 0];
 
     /////////////////////////////////////////
     //          SYNC CONVOLUTION 5         //
@@ -487,80 +496,80 @@ module top #(
     //           SYNC MAXPOOL 3            //
     /////////////////////////////////////////
 
-    logic [DATA_WIDTH_CONV4-1 : 0]    read_maxpool3;
-    logic [DATA_WIDTH_CONV4-1 : 0]    write_maxpool3;
-    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] addr_maxpool3;    
-    logic                             ena_maxpool3;
-    logic                             wea_maxpool3;
-    logic [1:0]                       mem_ptr_maxpool3;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    read_maxpool3;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    write_maxpool3;
+//    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] addr_maxpool3;    
+//    logic                             ena_maxpool3;
+//    logic                             wea_maxpool3;
+//    logic [1:0]                       mem_ptr_maxpool3;
 
-    sync_maxpool #(
-        .IN_GRAPH_SIZE  ( 16 ),
-        .OUT_GRAPH_SIZE ( 4  ),
-        .INPUT_DIM      ( 32 )
-    ) u_maxpool_3 (
-       .clk          ( clk                  ),
-       .reset        ( reset                ),
-       .in_addr      ( out_addr_conv5       ),
-       .in_edges     ( out_edges_conv5      ),
-       .in_features  ( features_conv5       ),
-       .in_valid     ( out_valid_conv5      ),
-       .in_mem_ptr   ( mem_ptr_conv5        ),
-       .read         ( read_maxpool3        ),
-       .write        ( write_maxpool3       ),
-       .addr         ( addr_maxpool3        ),
-       .ena          ( ena_maxpool3         ),
-       .wea          ( wea_maxpool3         ),
-       .mem_ptr      ( mem_ptr_maxpool3     )
-    );
+//    sync_maxpool #(
+//        .IN_GRAPH_SIZE  ( 16 ),
+//        .OUT_GRAPH_SIZE ( 4  ),
+//        .INPUT_DIM      ( 32 )
+//    ) u_maxpool_3 (
+//       .clk          ( clk                  ),
+//       .reset        ( reset                ),
+//       .in_addr      ( out_addr_conv5       ),
+//       .in_edges     ( out_edges_conv5      ),
+//       .in_features  ( features_conv5       ),
+//       .in_valid     ( out_valid_conv5      ),
+//       .in_mem_ptr   ( mem_ptr_conv5        ),
+//       .read         ( read_maxpool3        ),
+//       .write        ( write_maxpool3       ),
+//       .addr         ( addr_maxpool3        ),
+//       .ena          ( ena_maxpool3         ),
+//       .wea          ( wea_maxpool3         ),
+//       .mem_ptr      ( mem_ptr_maxpool3     )
+//    );
 
-    /////////////////////////////////////////
-    //             FEATURE MEM 4           //
-    //          graph 4, feature 64        //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //             FEATURE MEM 4           //
+//    //          graph 4, feature 64        //
+//    /////////////////////////////////////////
 
-    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_a;
-    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_b;
-    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] out_read_addr;
-    logic                             out_clean;
-    logic                             out_switch;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_a;
+//    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_b;
+//    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] out_read_addr;
+//    logic                             out_clean;
+//    logic                             out_switch;
 
-    feature_memory #(
-        .FEATURE_DIM ( 32 ),
-        .GRAPH_SIZE  ( 4  )
-    ) u_maxpool3_mem (
-       .clk        ( clk                ),
-       .reset      ( reset              ),
-       .in_read    ( read_maxpool3      ),
-       .in_write   ( write_maxpool3     ),
-       .in_addr    ( addr_maxpool3      ),
-       .in_ena     ( ena_maxpool3       ),
-       .in_wea     ( wea_maxpool3       ),
-       .in_mem_ptr ( mem_ptr_maxpool3   ),
-       .out_read_a ( out_read_a         ),
-       .out_read_b (                    ),
-       .out_addr   ( out_read_addr      ),
-       .out_clean  ( out_clean          ),
-       .out_switch ( out_switch         )
-    );
+//    feature_memory #(
+//        .FEATURE_DIM ( 32 ),
+//        .GRAPH_SIZE  ( 4  )
+//    ) u_maxpool3_mem (
+//       .clk        ( clk                ),
+//       .reset      ( reset              ),
+//       .in_read    ( read_maxpool3      ),
+//       .in_write   ( write_maxpool3     ),
+//       .in_addr    ( addr_maxpool3      ),
+//       .in_ena     ( ena_maxpool3       ),
+//       .in_wea     ( wea_maxpool3       ),
+//       .in_mem_ptr ( mem_ptr_maxpool3   ),
+//       .out_read_a ( out_read_a         ),
+//       .out_read_b (                    ),
+//       .out_addr   ( out_read_addr      ),
+//       .out_clean  ( out_clean          ),
+//       .out_switch ( out_switch         )
+//    );
 
-    /////////////////////////////////////////
-    //          SERIALIZE OUTPUT           //
-    /////////////////////////////////////////
+//    /////////////////////////////////////////
+//    //          SERIALIZE OUTPUT           //
+//    /////////////////////////////////////////
 
-    out_serialize #(
-        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
-        .INPUT_DIM  ( 32                   )
-    ) u_out_serialize (
-       .clk       ( clk           ),
-       .reset     ( reset         ),
-       .in_data   ( out_read_a    ),
-       .in_addr   ( out_read_addr ),
-       .in_clean  ( out_clean     ),
-       .in_switch ( out_switch    ),
-       .out_addr  ( out_addr      ),
-       .out_data  ( out_data      ),
-       .out_valid ( out_valid     )
-    );
+//    out_serialize #(
+//        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
+//        .INPUT_DIM  ( 32                   )
+//    ) u_out_serialize (
+//       .clk       ( clk           ),
+//       .reset     ( reset         ),
+//       .in_data   ( out_read_a    ),
+//       .in_addr   ( out_read_addr ),
+//       .in_clean  ( out_clean     ),
+//       .in_switch ( out_switch    ),
+//       .out_addr  ( out_addr      ),
+//       .out_data  ( out_data      ),
+//       .out_valid ( out_valid     )
+//    );
 
 endmodule : top

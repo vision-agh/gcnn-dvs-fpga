@@ -27,7 +27,7 @@ module async_conv #(
     // Relative position input feature quantization parameters
     localparam logic signed [PRECISION:0] NEG_3 = -SCALE_IN[2];
     localparam logic signed [PRECISION:0] NEG_2 = -SCALE_IN[1];
-    localparam logic signed [PRECISION:0] NEG_1 = -10;
+    localparam logic signed [PRECISION:0] NEG_1 = -SCALE_IN[0];
     localparam logic signed [PRECISION:0] POS_1 = SCALE_IN[0];
     localparam logic signed [PRECISION:0] POS_2 = SCALE_IN[1];
     localparam logic signed [PRECISION:0] POS_3 = SCALE_IN[2];

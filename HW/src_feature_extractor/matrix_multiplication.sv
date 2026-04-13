@@ -3,7 +3,7 @@
 module matrix_multiplication #(
     parameter int INPUT_DIM = 4,
     parameter int OUTPUT_DIM = 8,
-    parameter int PRECISION = 6,
+    parameter int PRECISION = 8,
     parameter int MULTIPLIER = 0,
     parameter int ZERO_POINT = 0
 )( 
