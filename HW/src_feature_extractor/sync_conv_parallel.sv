@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module sync_conv_parallel #(
-    parameter int GRAPH_SIZE        = 64,
+    parameter int GRAPH_SIZE        = 32,
     parameter int PRECISION         = graph_pkg::PRECISION,
     parameter int INPUT_DIM         = 16,
     parameter int OUTPUT_DIM        = 32,
@@ -12,7 +12,7 @@ module sync_conv_parallel #(
     parameter int ZERO_POINT_OUT    = 143,
     parameter int MULTIPLIER_OUT    = 11639801,
     parameter int ZERO_POINT_WEIGHT = 0,
-    parameter int PARALLEL_MUL      = 8,
+    parameter int PARALLEL_MUL      = 2,
     parameter string INIT_PATH      = "/home/power-station/Repo/Event2Graph/mem/ncaltech/tiny_conv2_param.mem",
     parameter int SCALE_IN          = 31,
     parameter int SCALE_IN_NEG      = SCALE_IN,
