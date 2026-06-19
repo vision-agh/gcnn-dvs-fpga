@@ -6,7 +6,7 @@ module sync_maxpool #(
     parameter int IN_ADDR_WIDTH  = $clog2(IN_GRAPH_SIZE*IN_GRAPH_SIZE),
     parameter int OUT_ADDR_WIDTH = $clog2(OUT_GRAPH_SIZE*OUT_GRAPH_SIZE),
     parameter int DATA_WIDTH     = (INPUT_DIM*PRECISION) + (9*2) //edges
-)( 
+)(
     input logic                         clk,
     input logic                         reset,
 
@@ -53,27 +53,29 @@ module sync_maxpool #(
     logic [PRECISION-1 :0]             h1_features [INPUT_DIM-1 : 0];
     logic [PRECISION-1 :0]             h2_features [INPUT_DIM-1 : 0];
     logic [PRECISION-1 :0]             ena_features [INPUT_DIM-1 : 0];
-    logic [PRECISION-1 :0]             logic_features [INPUT_DIM-1 : 0];    
+    logic [PRECISION-1 :0]             logic_features [INPUT_DIM-1 : 0];
     
     logic edge_converted;
     logic edge_converted_h1;
     logic edge_converted_h2;
     logic edge_converted_logic;
     logic edge_converted_wea;
+    logic is_start;
     logic [3 :0] t_diff;   //Only for POLL2x2
 
     // Counters control, input data assignments
     always @(posedge clk) begin
         if (reset) begin
-            counter <= 0;
+            counter <= MEMORY_OPS_NUM-1;
             counter_reg <= 0;
             reg_event <= '0;
             reg2_event <= '0;
             reg_edges <= '0;
             addr_ena <= '0;
-            edge_converted <= '0;
+            edge_converted <= 1;
             t_diff <= 0;
             ptr_reg <= 0;
+            is_start <= 0;
         end
         else begin
             counter_reg  <= counter;
@@ -87,6 +89,7 @@ module sync_maxpool #(
             end
             ptr_in_reg <= in_mem_ptr;
             if (in_valid && in_edges[4]) begin
+                is_start <= 1'b1;
                 counter <= 0;
                 reg_event.x <= in_addr % IN_GRAPH_SIZE;
                 reg_event.y <= (in_addr - (in_addr % IN_GRAPH_SIZE))/IN_GRAPH_SIZE;
@@ -99,7 +102,7 @@ module sync_maxpool #(
             if (edge_converted) begin
                 edge_converted <= 1'b0;
             end
-            if (counter == MEMORY_OPS_NUM-1 && !edge_converted) begin
+            if (counter == MEMORY_OPS_NUM-1 && !edge_converted && is_start) begin
                 edge_converted <= 1'b1;
             end
             edge_converted_h1 <= edge_converted;
@@ -194,7 +197,10 @@ module sync_maxpool #(
                 out_edges[index_a_reg] <= out_edges_a[index_a_reg];
                 out_edges[index_b_reg] <= out_edges_b[index_b_reg];
             end            
-        end 
+        end
+//        else if (counter_index_reg == MEMORY_OPS_NUM-1) begin
+//            out_edges[index_b_reg] <= out_edges_b[index_b_reg] | out_edges[index_b_reg];
+//        end   
         else begin
             if (index_a_reg == index_b_reg) begin
                 out_edges[index_a_reg] <= out_edges_a[index_a_reg] | out_edges_b[index_a_reg] | out_edges[index_a_reg];
@@ -211,8 +217,8 @@ module sync_maxpool #(
         write[17:0] <= read[17:0] | out_edges;
     end
 
-    logic signed [PRECISION-1 :0] mem_features [INPUT_DIM-1 : 0];    
-    logic signed [PRECISION-1 :0] out_features [INPUT_DIM-1 : 0];    
+    logic signed [PRECISION-1 :0] mem_features [INPUT_DIM-1 : 0];
+    logic signed [PRECISION-1 :0] out_features [INPUT_DIM-1 : 0];
 
     genvar f, e;
     generate
@@ -249,9 +255,9 @@ module sync_maxpool #(
         .N        ( 1  ),
         .DELAY    ( 12 )
     ) delay_valid1 (
-        .clk   ( clk            ),
-        .idata ( in_valid ),
-        .odata ( valid_d1       )
+        .clk   ( clk                     ),
+        .idata ( in_valid && in_edges[4] ),
+        .odata ( valid_d1                )
     );
 
     delay_module #(

@@ -1,4 +1,4 @@
-# Graph Convolutional Neural Networks for Event Based Vision for AMD SoC FPGA
+# Embedded graph convolutional networks for real-time event data processing on SoC FPGAs
 
 This repository provides the first hardware module for acceleration of Graph Convolutional Neural Network for Event Data processing on SoC FPGA. The solution deployed for the Zynq UltraScale+ MPSoC ZCU104 platform was evaluated for objects classification for the MNIST-DVS and N-Cars datasets. The system is implemented using the SystemVerilog language and the Vitis/Vivado 2022.2 environment.
 
@@ -17,7 +17,7 @@ This repository provides the first hardware module for acceleration of Graph Con
 |Krzysztof Błachut|PhD Student|kblachut@agh.edu.pl|AGH University of Krakow, Poland|
 |Tomasz Kryjak|Supervisor|kryjak@agh.edu.pl|AGH University of Krakow, Poland|
 
-## Additional Information
+## AMD Open Hardware Desigh Competition 2024
 
 |Category|Description|
 |-|-|
@@ -25,6 +25,8 @@ This repository provides the first hardware module for acceleration of Graph Con
 |Board used|Zynq UltraScale+ MPSoC ZCU104 Evaluation Kit|
 |Software version|Vivado 2022.2|
 |Link to YouTube Video|[https://youtu.be/w8-i1E3F-jE](https://youtu.be/w8-i1E3F-jE)|
+
+We were awarded the title of winner in PhD Categorie
 
 ## Getting Started
 
@@ -42,7 +44,6 @@ The hardware part of the project is responsible for implementing the Graph Convo
 
 The `demo` folder provides all files necessary for running the MNIST-DVS classification demo for GCNNs inference with Zynq UltraScale+ MPSoC ZCU104 Evaluation Kit.
 
-
 ## Citation
 If you find this project useful in your research, please consider citing our work:
 
@@ -50,10 +51,11 @@ If you find this project useful in your research, please consider citing our wor
 @article{jeziorek2024embedded,
   title={Embedded Graph Convolutional Networks for Real-Time Event Data Processing on SoC FPGAs},
   author={Jeziorek, Kamil and Wzorek, Piotr and Blachut, Krzysztof and Pinna, Andrea and Kryjak, Tomasz},
-  journal={arXiv preprint arXiv:2406.07318},
-  year={2024}
+  journal={Journal of Systems Architecture},
+  doi = {https://doi.org/10.1016/j.sysarc.2026.103850},
+  url = {https://www.sciencedirect.com/science/article/pii/S1383762126001682},
+  year={2026}
 }
-
 
 @article{jeziorek2024optimising,
   title={Optimising Graph Representation for Hardware Implementation of Graph Convolutional Networks for Event-based Vision},

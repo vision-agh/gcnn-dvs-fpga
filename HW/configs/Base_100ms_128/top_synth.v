@@ -1,4 +1,4 @@
-module top_mod_synth #(
+module top_synth #(
     // Sensor resolution [for this demo - 128x128]
     parameter MAX_X_COORD    = 128,
     parameter MAX_Y_COORD    = 128,
@@ -17,8 +17,8 @@ module top_mod_synth #(
     input                         is_valid,     // The is_valid flag for input events
 
     output [5 : 0]  out_addr,     // Output feature map element address
-    output [7 : 0]                out_data,          // Output feature map element data
-    output                        out_valid     // The is_valid flag for output feature map
+    output [7 : 0]  out_data,     // Output feature map element data
+    output          out_valid     // The is_valid flag for output feature map
 );
 
     top #(

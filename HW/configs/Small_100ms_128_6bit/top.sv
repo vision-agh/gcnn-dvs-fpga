@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module top #(
+module top #( 
     parameter int MAX_X_COORD	 = 128,
     parameter int MAX_Y_COORD	 = 128,
     parameter int INPUT_BIT_TIME = 32,
@@ -10,7 +10,7 @@ module top #(
     parameter int ADDR_WIDTH_MAXPOOL1 = $clog2(32*32),
     parameter int ADDR_WIDTH_MAXPOOL2 = $clog2(16*16),
     parameter int DATA_WIDTH_CONV2 = (32*graph_pkg::PRECISION) + (9*2),
-    parameter int DATA_WIDTH_CONV4 = (64*graph_pkg::PRECISION) + (9*2),
+    parameter int DATA_WIDTH_CONV4 = (32*graph_pkg::PRECISION) + (9*2),
     parameter int ADDR_WIDTH_MAXPOOL3 = $clog2(4*4)
 )( 
     input logic                       clk,
@@ -21,11 +21,15 @@ module top #(
     input logic                       polarity,
     input logic                       is_valid,
 
-//    output logic                             conv2_wea,
-//    output logic [ADDR_WIDTH_MAXPOOL1-1 : 0] conv2_out_addr,
-//    output logic [graph_pkg::PRECISION-1 :0] conv2_out_features [31 : 0],
-//    output logic [17:0]                      conv2_out_edges,
-//    output logic [1:0]                       conv2_mem_ptr
+//    output logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0],
+//    output graph_pkg::event_type                             event_to_maxpool1,s
+//    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1
+
+//    output logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5,
+//    output logic [graph_pkg::PRECISION-1 :0] features_conv5 [31 : 0],
+//    output logic [17:0]                      out_edges_conv5,
+//    output logic                             out_valid_conv5,
+//    output logic [1:0]                       mem_ptr_conv5
 
     output logic [$clog2(4*4*4)-1 : 0]        out_addr,
     output logic [graph_pkg::PRECISION-1 : 0] out_data,
@@ -42,48 +46,48 @@ module top #(
     // u_conv3              -> 35 -> 32 convolution for 32x32 graph
     // u_maxpool_2          -> Rescaling graph 32 -> 16
     // u_maxpool_2_mem      -> Memory shared between u_maxpool_2 and u_conv4
-    // u_conv4              -> 35 -> 64 convolution for 16x16 graph
+    // u_conv4              -> 35 -> 32 convolution for 16x16 graph
     // u_conv4_mem          -> Memory shared between u_conv4 and u_conv5
-    // u_conv5              -> 67 -> 64 convolution for 16x16 graph
+    // u_conv5              -> 35 -> 32 convolution for 16x16 graph
     // u_maxpool_3          -> Rescaling graph 16 -> 4
     // u_maxpool3_mem       -> Memory shared between u_maxpool_3 and u_out_serialize
     // u_out_serialize      -> Output feature map serialization 
 
     // String paths for weights memories
-    localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/mem/"};
+    localparam string MEMORY_DIR_PATH = {graph_pkg::REPO_PATH, "/HW/configs/Small_100ms_128_6bit/"};
 
     // Parameters for each convolutional layer
-    localparam ZERO_POINT_CONV1 = 149;
-    localparam MULTIPLIER_OUT_CONV1 = 25508880;
-    localparam int SCALE_IN_CONV1 [2:0] = {127, 85, 42};
+    localparam ZERO_POINT_CONV1 = 30;
+    localparam MULTIPLIER_OUT_CONV1 = 130702880;
+    localparam int SCALE_IN_CONV1 [2:0] = {31, 21, 11};
 
     localparam ZERO_POINT_IN_CONV2 = ZERO_POINT_CONV1;
-    localparam ZERO_POINT_OUT_CONV2 = 200;
-    localparam MULTIPLIER_OUT_CONV2 = 40012032;
-    localparam SCALE_IN_CONV2 = 35;
-    localparam ZERO_POINT_WEIGHT_CONV2 = 190;
-    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "tiny_conv2_param.mem"};
+    localparam ZERO_POINT_OUT_CONV2 = 27;
+    localparam MULTIPLIER_OUT_CONV2 = 107515280;
+    localparam SCALE_IN_CONV2 = 10;
+    localparam ZERO_POINT_WEIGHT_CONV2 = 34;
+    localparam string INIT_PATH_CONV2 = {MEMORY_DIR_PATH, "conv2_param.mem"};
 
     localparam ZERO_POINT_IN_CONV3 = ZERO_POINT_OUT_CONV2;
-    localparam ZERO_POINT_OUT_CONV3 = 203;
-    localparam MULTIPLIER_OUT_CONV3 = 47508080;
-    localparam SCALE_IN_CONV3 = 18;
-    localparam ZERO_POINT_WEIGHT_CONV3 = 165;
-    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "tiny_conv3_param.mem"};
+    localparam ZERO_POINT_OUT_CONV3 = 28;
+    localparam MULTIPLIER_OUT_CONV3 = 178535472;
+    localparam SCALE_IN_CONV3 = 5;
+    localparam ZERO_POINT_WEIGHT_CONV3 = 25;
+    localparam string INIT_PATH_CONV3 = {MEMORY_DIR_PATH, "conv3_param.mem"};
 
     localparam ZERO_POINT_IN_CONV4 = ZERO_POINT_OUT_CONV3;
-    localparam ZERO_POINT_OUT_CONV4 = 195;
-    localparam MULTIPLIER_OUT_CONV4 = 51488348;
-    localparam SCALE_IN_CONV4 = 17;
-    localparam ZERO_POINT_WEIGHT_CONV4 = 173;
-    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "tiny_conv4_param.mem"};
+    localparam ZERO_POINT_OUT_CONV4 = 30;
+    localparam MULTIPLIER_OUT_CONV4 = 205962528;
+    localparam SCALE_IN_CONV4 = 5;
+    localparam ZERO_POINT_WEIGHT_CONV4 = 32;
+    localparam string INIT_PATH_CONV4 = {MEMORY_DIR_PATH, "conv4_param.mem"};
 
     localparam ZERO_POINT_IN_CONV5 = ZERO_POINT_OUT_CONV4;
-    localparam ZERO_POINT_OUT_CONV5 = 213;
-    localparam MULTIPLIER_OUT_CONV5 = 71936992;
-    localparam SCALE_IN_CONV5 = 13;
-    localparam ZERO_POINT_WEIGHT_CONV5 = 199;
-    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "tiny_conv5_param.mem"};
+    localparam ZERO_POINT_OUT_CONV5 = 27;
+    localparam MULTIPLIER_OUT_CONV5 = 188461888;
+    localparam SCALE_IN_CONV5 = 5;
+    localparam ZERO_POINT_WEIGHT_CONV5 = 36;
+    localparam string INIT_PATH_CONV5 = {MEMORY_DIR_PATH, "conv5_param.mem"};
 
     /////////////////////////////////////////
     //           GENERATE GRAPH            //
@@ -118,25 +122,25 @@ module top #(
 
     logic signed [graph_pkg::PRECISION:0] weights_conv1 [15:0][3:0];
     initial begin
-        weights_conv1[0] = {-6, 105, 45, 0};
-        weights_conv1[1] = {59, 2, -8, -23};
-        weights_conv1[2] = {56, -9, -7, -9};
-        weights_conv1[3] = {-3, -103, -47, -1};
-        weights_conv1[4] = {-9, -72, 40, 0};
-        weights_conv1[5] = {10, -1, -3, 2};
-        weights_conv1[6] = {112, 7, -14, -120};
-        weights_conv1[7] = {-13, 1, 98, 2};
-        weights_conv1[8] = {6, -30, 0, 12};
-        weights_conv1[9] = {130, -4, 11, 121};
-        weights_conv1[10] = {24, 11, 22, 10};
-        weights_conv1[11] = {73, 9, -24, 3};
-        weights_conv1[12] = {-17, -16, -98, -2};
-        weights_conv1[13] = {56, -4, 4, -3};
-        weights_conv1[14] = {18, 18, 11, 17};
-        weights_conv1[15] = {-7, 86, -34, -5};
+        weights_conv1[0] <= '{-4, 27, 7, 11};
+        weights_conv1[1] <= '{3, 19, -8, -17};
+        weights_conv1[2] <= '{-1, -16, -12, 22};
+        weights_conv1[3] <= '{0, 1, 1, -36};
+        weights_conv1[4] <= '{-5, 8, -28, -13};
+        weights_conv1[5] <= '{-5, 14, -11, 24};
+        weights_conv1[6] <= '{-2, 10, 27, -15};
+        weights_conv1[7] <= '{-1, -17, 23, 15};
+        weights_conv1[8] <= '{-10, -6, -5, 22};
+        weights_conv1[9] <= '{-7, -6, 15, -20};
+        weights_conv1[10] <= '{-2, -28, -14, -5};
+        weights_conv1[11] <= '{-4, 22, -5, -21};
+        weights_conv1[12] <= '{1, -10, -26, 13};
+        weights_conv1[13] <= '{-6, -6, -24, 5};
+        weights_conv1[14] <= '{-16, -1, -19, 2};
+        weights_conv1[15] <= '{-13, -8, -14, -15};
     end
 
-    const logic signed [31:0] bias_conv1 [15:0] = {-3237, -3343, -845, -2419, -3417, -3539, -2513, -4369, -1880, -2075, -439, -1841, -2890, -1806, -2509, -2823};
+    const logic signed [31:0] bias_conv1 [15:0] = {-55, -131, -56, 33, 109, 11, 15, -2, 28, 95, -8, 30, 128, 27, 59, 5};
 
     logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0];
     graph_pkg::event_type                             event_to_maxpool1;
@@ -293,7 +297,7 @@ module top #(
     logic [1:0] mem_ptr_conv3;
     logic [ADDR_WIDTH_MAXPOOL1-1 : 0] out_addr_conv3;
     logic [17 : 0] out_edges_conv3;
-    logic [7 : 0]  features_conv3 [31 : 0];
+    logic [graph_pkg::PRECISION-1 : 0]  features_conv3 [31 : 0];
 
     sync_conv #(
         .INPUT_DIM         ( 32                      ),
@@ -385,13 +389,13 @@ module top #(
     logic [1:0] mem_ptr_conv4;
     logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv4;
     logic [17 : 0] out_edges_conv4;
-    logic [7 : 0]  features_conv4 [63 : 0];
+    logic [graph_pkg::PRECISION-1 : 0]  features_conv4 [31 : 0];
     logic [DATA_WIDTH_CONV4-1 : 0] conv4_out_data;
 
     sync_conv #(
         .GRAPH_SIZE        ( 16                      ),
         .INPUT_DIM         ( 32                      ),
-        .OUTPUT_DIM        ( 64                      ),
+        .OUTPUT_DIM        ( 32                      ),
         .ZERO_POINT_IN     ( ZERO_POINT_IN_CONV4     ),
         .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV4    ),
         .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV4    ),
@@ -423,7 +427,7 @@ module top #(
     end
     genvar m;
     generate
-        for (m = 0; m < 64; m++) begin : conv4_data_read
+        for (m = 0; m < 32; m++) begin : conv4_data_read
             assign conv4_out_data[((graph_pkg::PRECISION*(m+1))-1)+(9*2) : (graph_pkg::PRECISION*m)+(9*2)] = features_conv4[m];
         end
     endgenerate
@@ -435,7 +439,7 @@ module top #(
     logic                             conv5_switch;
 
     feature_memory #(
-        .FEATURE_DIM ( 64 ),
+        .FEATURE_DIM ( 32 ),
         .GRAPH_SIZE  ( 16 )
     ) u_conv4_mem (
        .clk        ( clk                ),
@@ -457,7 +461,7 @@ module top #(
     logic [1:0] mem_ptr_conv5;
     logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
     logic [17 : 0] out_edges_conv5;
-    logic [7 : 0]  features_conv5 [63 : 0];
+    logic [graph_pkg::PRECISION-1 : 0]  features_conv5 [31 : 0];
 
     /////////////////////////////////////////
     //          SYNC CONVOLUTION 5         //
@@ -466,8 +470,8 @@ module top #(
 
     sync_conv #(
         .GRAPH_SIZE        ( 16                      ),
-        .INPUT_DIM         ( 64                      ),
-        .OUTPUT_DIM        ( 64                      ),
+        .INPUT_DIM         ( 32                      ),
+        .OUTPUT_DIM        ( 32                      ),
         .ZERO_POINT_IN     ( ZERO_POINT_IN_CONV5     ),
         .ZERO_POINT_OUT    ( ZERO_POINT_OUT_CONV5    ),
         .MULTIPLIER_OUT    ( MULTIPLIER_OUT_CONV5    ),
@@ -503,7 +507,7 @@ module top #(
     sync_maxpool #(
         .IN_GRAPH_SIZE  ( 16 ),
         .OUT_GRAPH_SIZE ( 4  ),
-        .INPUT_DIM      ( 64 )
+        .INPUT_DIM      ( 32 )
     ) u_maxpool_3 (
        .clk          ( clk                  ),
        .reset        ( reset                ),
@@ -532,7 +536,7 @@ module top #(
     logic                             out_switch;
 
     feature_memory #(
-        .FEATURE_DIM ( 64 ),
+        .FEATURE_DIM ( 32 ),
         .GRAPH_SIZE  ( 4  )
     ) u_maxpool3_mem (
        .clk        ( clk                ),
@@ -555,7 +559,8 @@ module top #(
     /////////////////////////////////////////
 
     out_serialize #(
-        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 )
+        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
+        .INPUT_DIM  ( 32                   )
     ) u_out_serialize (
        .clk       ( clk           ),
        .reset     ( reset         ),
