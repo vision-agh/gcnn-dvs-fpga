@@ -22,18 +22,18 @@ module top #(
     input logic                       is_valid,
 
 //    output logic [graph_pkg::PRECISION-1 :0]                 features_to_maxpool1 [15 : 0],
-//    output graph_pkg::event_type                             event_to_maxpool1,
+//    output graph_pkg::event_type                             event_to_maxpool1,s
 //    output graph_pkg::edge_type [graph_pkg::MAX_EDGES-1 : 0] edges_to_maxpool1
 
-    output logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5,
-    output logic [graph_pkg::PRECISION-1 :0] features_conv5 [31 : 0],
-    output logic [17:0]                      out_edges_conv5,
-    output logic                             out_valid_conv5,
-    output logic [1:0]                       mem_ptr_conv5
+//    output logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5,
+//    output logic [graph_pkg::PRECISION-1 :0] features_conv5 [31 : 0],
+//    output logic [17:0]                      out_edges_conv5,
+//    output logic                             out_valid_conv5,
+//    output logic [1:0]                       mem_ptr_conv5
 
-//    output logic [$clog2(4*4*4)-1 : 0]        out_addr,
-//    output logic [graph_pkg::PRECISION-1 : 0] out_data,
-//    output logic                              out_valid
+    output logic [$clog2(4*4*4)-1 : 0]        out_addr,
+    output logic [graph_pkg::PRECISION-1 : 0] out_data,
+    output logic                              out_valid
 
 );
     // GCNN accelerator for MNIST-DVS classification with the following network structure:
@@ -457,11 +457,11 @@ module top #(
        .out_switch ( conv5_switch       )
     );
 
-//    logic out_valid_conv5;
-//    logic [1:0] mem_ptr_conv5;
-//    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
-//    logic [17 : 0] out_edges_conv5;
-//    logic [graph_pkg::PRECISION-1 : 0]  features_conv5 [31 : 0];
+    logic out_valid_conv5;
+    logic [1:0] mem_ptr_conv5;
+    logic [ADDR_WIDTH_MAXPOOL2-1 : 0] out_addr_conv5;
+    logic [17 : 0] out_edges_conv5;
+    logic [graph_pkg::PRECISION-1 : 0]  features_conv5 [31 : 0];
 
     /////////////////////////////////////////
     //          SYNC CONVOLUTION 5         //
@@ -493,84 +493,84 @@ module top #(
         .mem_ptr    ( mem_ptr_conv5      )
     );
 
-//    /////////////////////////////////////////
-//    //           SYNC MAXPOOL 3            //
-//    /////////////////////////////////////////
+    /////////////////////////////////////////
+    //           SYNC MAXPOOL 3            //
+    /////////////////////////////////////////
 
-//    logic [DATA_WIDTH_CONV4-1 : 0]    read_maxpool3;
-//    logic [DATA_WIDTH_CONV4-1 : 0]    write_maxpool3;
-//    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] addr_maxpool3;    
-//    logic                             ena_maxpool3;
-//    logic                             wea_maxpool3;
-//    logic [1:0]                       mem_ptr_maxpool3;
+    logic [DATA_WIDTH_CONV4-1 : 0]    read_maxpool3;
+    logic [DATA_WIDTH_CONV4-1 : 0]    write_maxpool3;
+    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] addr_maxpool3;    
+    logic                             ena_maxpool3;
+    logic                             wea_maxpool3;
+    logic [1:0]                       mem_ptr_maxpool3;
 
-//    sync_maxpool #(
-//        .IN_GRAPH_SIZE  ( 16 ),
-//        .OUT_GRAPH_SIZE ( 4  ),
-//        .INPUT_DIM      ( 32 )
-//    ) u_maxpool_3 (
-//       .clk          ( clk                  ),
-//       .reset        ( reset                ),
-//       .in_addr      ( out_addr_conv5       ),
-//       .in_edges     ( out_edges_conv5      ),
-//       .in_features  ( features_conv5       ),
-//       .in_valid     ( out_valid_conv5      ),
-//       .in_mem_ptr   ( mem_ptr_conv5        ),
-//       .read         ( read_maxpool3        ),
-//       .write        ( write_maxpool3       ),
-//       .addr         ( addr_maxpool3        ),
-//       .ena          ( ena_maxpool3         ),
-//       .wea          ( wea_maxpool3         ),
-//       .mem_ptr      ( mem_ptr_maxpool3     )
-//    );
+    sync_maxpool #(
+        .IN_GRAPH_SIZE  ( 16 ),
+        .OUT_GRAPH_SIZE ( 4  ),
+        .INPUT_DIM      ( 32 )
+    ) u_maxpool_3 (
+       .clk          ( clk                  ),
+       .reset        ( reset                ),
+       .in_addr      ( out_addr_conv5       ),
+       .in_edges     ( out_edges_conv5      ),
+       .in_features  ( features_conv5       ),
+       .in_valid     ( out_valid_conv5      ),
+       .in_mem_ptr   ( mem_ptr_conv5        ),
+       .read         ( read_maxpool3        ),
+       .write        ( write_maxpool3       ),
+       .addr         ( addr_maxpool3        ),
+       .ena          ( ena_maxpool3         ),
+       .wea          ( wea_maxpool3         ),
+       .mem_ptr      ( mem_ptr_maxpool3     )
+    );
 
-//    /////////////////////////////////////////
-//    //             FEATURE MEM 4           //
-//    //          graph 4, feature 64        //
-//    /////////////////////////////////////////
+    /////////////////////////////////////////
+    //             FEATURE MEM 4           //
+    //          graph 4, feature 64        //
+    /////////////////////////////////////////
 
-//    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_a;
-//    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_b;
-//    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] out_read_addr;
-//    logic                             out_clean;
-//    logic                             out_switch;
+    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_a;
+    logic [DATA_WIDTH_CONV4-1 : 0]    out_read_b;
+    logic [ADDR_WIDTH_MAXPOOL3-1 : 0] out_read_addr;
+    logic                             out_clean;
+    logic                             out_switch;
 
-//    feature_memory #(
-//        .FEATURE_DIM ( 32 ),
-//        .GRAPH_SIZE  ( 4  )
-//    ) u_maxpool3_mem (
-//       .clk        ( clk                ),
-//       .reset      ( reset              ),
-//       .in_read    ( read_maxpool3      ),
-//       .in_write   ( write_maxpool3     ),
-//       .in_addr    ( addr_maxpool3      ),
-//       .in_ena     ( ena_maxpool3       ),
-//       .in_wea     ( wea_maxpool3       ),
-//       .in_mem_ptr ( mem_ptr_maxpool3   ),
-//       .out_read_a ( out_read_a         ),
-//       .out_read_b (                    ),
-//       .out_addr   ( out_read_addr      ),
-//       .out_clean  ( out_clean          ),
-//       .out_switch ( out_switch         )
-//    );
+    feature_memory #(
+        .FEATURE_DIM ( 32 ),
+        .GRAPH_SIZE  ( 4  )
+    ) u_maxpool3_mem (
+       .clk        ( clk                ),
+       .reset      ( reset              ),
+       .in_read    ( read_maxpool3      ),
+       .in_write   ( write_maxpool3     ),
+       .in_addr    ( addr_maxpool3      ),
+       .in_ena     ( ena_maxpool3       ),
+       .in_wea     ( wea_maxpool3       ),
+       .in_mem_ptr ( mem_ptr_maxpool3   ),
+       .out_read_a ( out_read_a         ),
+       .out_read_b (                    ),
+       .out_addr   ( out_read_addr      ),
+       .out_clean  ( out_clean          ),
+       .out_switch ( out_switch         )
+    );
 
-//    /////////////////////////////////////////
-//    //          SERIALIZE OUTPUT           //
-//    /////////////////////////////////////////
+    /////////////////////////////////////////
+    //          SERIALIZE OUTPUT           //
+    /////////////////////////////////////////
 
-//    out_serialize #(
-//        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
-//        .INPUT_DIM  ( 32                   )
-//    ) u_out_serialize (
-//       .clk       ( clk           ),
-//       .reset     ( reset         ),
-//       .in_data   ( out_read_a    ),
-//       .in_addr   ( out_read_addr ),
-//       .in_clean  ( out_clean     ),
-//       .in_switch ( out_switch    ),
-//       .out_addr  ( out_addr      ),
-//       .out_data  ( out_data      ),
-//       .out_valid ( out_valid     )
-//    );
+    out_serialize #(
+        .ZERO_POINT ( ZERO_POINT_OUT_CONV5 ),
+        .INPUT_DIM  ( 32                   )
+    ) u_out_serialize (
+       .clk       ( clk           ),
+       .reset     ( reset         ),
+       .in_data   ( out_read_a    ),
+       .in_addr   ( out_read_addr ),
+       .in_clean  ( out_clean     ),
+       .in_switch ( out_switch    ),
+       .out_addr  ( out_addr      ),
+       .out_data  ( out_data      ),
+       .out_valid ( out_valid     )
+    );
 
 endmodule : top
