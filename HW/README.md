@@ -14,33 +14,18 @@ In this diagram, the asynchronous part (event-by-event processing) is highlighte
 
 - `src_feature_extractor` - source code for graph generation and feature extraction hardware module
 - `src_ps_pl_communication` - source code for PS-PL communication
-- `mem` - BRAM memory initialisation files (GCNN weights for synchronous convolutions)
+- `configs` - packages, top files and weights for multiple system configurations
 - `img` - images for README
-- `build_project.tcl` - a TCL script for Vivado 2022.2 project generation
 
-## Open design and generate bitstream manual
+## Open design for simulation
 
 1. Clone this repository.
-2. Navigate to `repository/HW/src_feature_extractor`, open `mnist_pkg.sv` file and set correct `REPO_PATH` parameter (top repository directory). The code presented was implemented on the Ubuntu 22.04 operating system. If you are using Windows, you will need to make an additional edit to `MEMORY_DIR_PATH` parameter in line 53 of the `top.sv` file (due to the use of backslash instead of fraction slash).
-2. Open Vivado 2022.2 (module tested exclusively for this version).
-3. Navigate to `repository/HW/` directory in Vivado `TCL console`.
-4. Run `source build_project.tcl` to create Vivado project with our hardware module.
-5. Now you can study our hardware module, run synthesys, implementation and bitstream generation.
-6. If you want to run demo with your own XSA file, use File->Export->Export Hardware (remember to check `Include bitstream` option)
+2. Navigate to `repository/HW/configs/$NAME$/`, open `graph_pkg.sv` file and set correct `REPO_PATH` parameter (top repository directory). The code presented was implemented on the Ubuntu 22.04 operating system.
+3. Open Vivado 2022.2 (module tested exclusively for this version) and create project.
+4. Add all files from `src_feature_extractor` along with `graph_pkg.sv`, `top.sv` and `top_synth.sv` from suitable config directory.
+5. Now you can study our hardware module
 
 ## Hardware modules description (`src_feature_extractor`)
-
-### `./mnist_pkg.sv` module
-
-Package containing the most important parameters and data types used for MNIST-DVS classification system
-
-### `./top_synth.v` module
-
-Top module for synthesis and implementation (included in project's Block Design)
-
-### `./top.sv` module
-
-Top module containing all used hardware modules of the system for graph generation and feature extraction
 
 ### `./generate_graph.sv` module
 
