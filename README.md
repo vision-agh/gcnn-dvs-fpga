@@ -48,7 +48,7 @@ The `demo` folder provides all files necessary for running the MNIST-DVS classif
 If you find this project useful in your research, please consider citing our work:
 
 ```BibTeX
-@article{jeziorek2024embedded,
+@article{jeziorek2026embedded,
   title={Embedded Graph Convolutional Networks for Real-Time Event Data Processing on SoC FPGAs},
   author={Jeziorek, Kamil and Wzorek, Piotr and Blachut, Krzysztof and Pinna, Andrea and Kryjak, Tomasz},
   journal={Journal of Systems Architecture},
@@ -58,10 +58,12 @@ If you find this project useful in your research, please consider citing our wor
 }
 
 @article{jeziorek2024optimising,
-  title={Optimising Graph Representation for Hardware Implementation of Graph Convolutional Networks for Event-based Vision},
+  title={Optimising graph representation for hardware implementation of graph convolutional networks for event-based vision},
   author={Jeziorek, Kamil and Wzorek, Piotr and Blachut, Krzysztof and Pinna, Andrea and Kryjak, Tomasz},
-  journal={arXiv preprint arXiv:2401.04988},
-  year={2024}
+  booktitle={International Workshop on Design and Architecture for Signal and Image Processing},
+  pages={110--122},
+  year={2024},
+  organization={Springer}
 }
 
 @inproceedings{jeziorek2023memory,
